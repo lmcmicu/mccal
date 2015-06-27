@@ -1,0 +1,212 @@
+#!/usr/bin/perl
+
+# Copyright 2014 Michael Cuffaro
+# 
+# This file is part of mccal.
+# 
+# mccal is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# mccal is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with mccal.  If not, see <http://www.gnu.org/licenses/>.
+
+
+use strict;
+use DateTime;
+
+my $calFilename = "$ENV{HOME}/.mycalendar.txt";
+chomp (my $timeZone = `cat /etc/timezone`);
+
+sub SortEntries {
+    # the only side effect of this routine is it will collapse whitespace
+    my (@input) = @_;
+    my @output;
+
+    while (chomp (my $line = shift @input)) {
+		
+		# remove the initial id portion of the line:
+		$line =~ s/^ID:\S+ //;
+
+		# remove date and time separators ("/" and ":")
+		$line =~
+			s/([0-9]{1,4})-
+	      	([0-9]{1,2})-
+	      	([0-9]{1,2})\s+
+	      	([0-9]{1,2}):
+	      	([0-9]{1,2})\s+
+	      	(.*)
+	      	/$1 $2 $3 $4 $5 $6/x;
+	
+		push @output, $line;
+    }
+
+    # sort the entries here:
+    @output =
+	map { $_->[0] }
+        sort {
+	    my @a_fields = @$a[1..$#$a];
+	    my @b_fields = @$b[1..$#$b];
+
+	    $a_fields[0] <=> $b_fields[0] ||
+		$a_fields[1] <=> $b_fields[1] ||
+		$a_fields[2] <=> $b_fields[2] ||
+		$a_fields[3] <=> $b_fields[3] ||
+		$a_fields[4] <=> $b_fields[4]
+	}
+        map { [$_, split] } @output;
+
+    # put the separators back in:
+    foreach my $outputline (@output) {
+	$outputline =~
+	    s/([0-9]{1,4})\s
+	      ([0-9]{1,2})\s
+	      ([0-9]{1,2})\s
+	      ([0-9]{1,2})\s
+	      ([0-9]{1,2})\s
+	      (.*)
+	      /$1-$2-$3 $4:$5 $6/x;
+    }
+    return @output;
+}
+
+
+sub PrintEntries {
+    my (@entries) = @_;
+
+    foreach my $entry (@entries) {
+	print "$entry\n";
+    }
+}
+
+################## MAIN CODE STARTS HERE ##################
+
+my $dateToCheck;
+my $dateArgvPos;
+if ($ARGV[0] =~ /^-f/) {
+	$calFilename = $ARGV[1];
+	$dateArgvPos = 2;
+}
+else {
+	$dateArgvPos = 0;
+}
+
+if (!defined $ARGV[$dateArgvPos]) {
+    $dateToCheck = "today";
+}
+elsif ($ARGV[$dateArgvPos] =~ /^(-){1,2}h(elp){0,1}$/) {
+    chomp(my $prog = `basename $0`);
+    print "Usage:\n$prog [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|" .
+	  "<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]\n";
+    exit 1;
+}
+else {
+    $dateToCheck = $ARGV[$dateArgvPos];
+}
+
+if ($dateToCheck =~ /^\d{1,4}(-\d{1,2}){0,2}$/) {
+	my ($year, $month, $day, $rest, $grepString);
+    ($year, $rest) = split /-/, $dateToCheck, 2;
+    $year =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
+    $grepString = "\"$year";
+
+	($month, $rest) = split /-/, $rest, 2;
+	if (defined($month)) {
+		$month =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
+		$grepString .= "-0*$month";
+	}
+
+	($day, $rest) = split /-/, $rest, 2;
+	if (defined($day)) {
+		$day =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
+		$grepString .= "-0*$day";
+	}
+
+	$grepString .= "\"";
+    my @lines =	`grep -w $grepString $calFilename |grep -v SNOOZE`;
+    PrintEntries SortEntries @lines;
+}
+elsif ($dateToCheck =~ /^today$/) {
+    my $todaysDate = `date +"%Y-%m-%d"`;
+    chomp $todaysDate;
+    my ($year, $month, $day) = split /-/, $todaysDate, 3;
+    # strip leading zeros:
+    $year =~ s/^\s*0*([1-9]+)/$1/;
+    $month =~ s/^\s*0*([1-9]+)/$1/;
+    $day =~ s/^\s*0*([1-9]+)/$1/;
+
+    my $grepString = "\"$year-0*$month-0*$day\"";
+    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
+    PrintEntries SortEntries @lines;
+}
+elsif ($dateToCheck =~ /^month$/) {
+    my $thisMonth = `date +"%Y-%m"`;
+    chomp $thisMonth;
+    my ($year, $month) = split /-/, $thisMonth, 2;
+    # strip leading zeros:
+    $year =~ s/^\s*0*([1-9]+)/$1/;
+    $month =~ s/^\s*0*([1-9]+)/$1/;
+
+    my $grepString = "\"$year-0*$month\"";
+    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
+    PrintEntries SortEntries @lines;
+}
+elsif ($dateToCheck =~ /^year$/) {
+    my $thisYear = `date +"%Y"`;
+    chomp $thisYear;
+    # strip leading zeros:
+    $thisYear =~ s/^\s*0*([1-9]+)/$1/;
+    
+    my $grepString = "\"$thisYear\"";
+    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
+    PrintEntries SortEntries @lines;
+}
+else {
+    my @dates;
+    if ($dateToCheck =~ /^tomorrow$/) {
+	my $date = DateTime->now;
+	$date->set_time_zone($timeZone);
+	$date->add(days=>1);
+	push @dates, $date;
+    }
+    elsif ($dateToCheck =~ /^yesterday$/) {
+	my $date = DateTime->now;
+	$date->set_time_zone($timeZone);
+	$date->add(days=>-1);
+	push @dates, $date;
+    }
+    elsif ($dateToCheck =~ /^week$/) {
+	my $date = DateTime->now;
+	$date->set_time_zone($timeZone);
+
+	$date->add(days => -($date->day_of_week - 1));
+	my $firstdate = $date->clone;
+	push @dates, $firstdate;
+	
+	for (my $i = 0; $i < 6; $i++) {
+	    $date->add(days=>1);
+	    my $tmpdate = $date->clone;
+	    push @dates, $tmpdate;
+	}
+    }
+    else {
+	print STDERR "Invalid date\n";
+	exit 1;
+    }
+    
+    foreach my $nextDate (@dates) {
+	my $year = $nextDate->year;
+	my $month = $nextDate->month;
+	my $day = $nextDate->day;
+
+	my $grepString = "\"$year-0*$month-0*$day\"";
+	my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
+	PrintEntries SortEntries @lines;
+    }
+}

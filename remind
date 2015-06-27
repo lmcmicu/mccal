@@ -1,0 +1,138 @@
+#!/usr/bin/perl
+
+# Copyright 2014 Michael Cuffaro
+# 
+# This file is part of mccal.
+# 
+# mccal is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# mccal is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with mccal.  If not, see <http://www.gnu.org/licenses/>.
+
+
+BEGIN {
+	push @INC, "/home/mike/lib";
+}
+
+use strict;
+use DateTime;
+use Time::HiRes qw ( time );
+use commonfuncs;
+
+chomp (my $timeZone = `cat /etc/timezone`);
+my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
+
+sub WriteIdToProcessedEventsFile {
+	my ($idToWrite) = @_;
+
+	# write the id of the event to the processed events file
+    if (!open(OUTFILE, ">> $processedEventsFilename")) {
+		MailError "cannot open $processedEventsFilename: $!";
+		return 0;
+    }
+
+	print OUTFILE "$idToWrite\n";
+	close OUTFILE;
+}
+
+##############################################################################
+### main code starts here
+### TO CONTROL WHERE THE WINDOW POPS UP USE .Xresources
+
+my ($calFilename, $id, $reminder) = split / /, "@ARGV", 3;
+my ($text, $commands) = split /;/, $reminder, 2; 
+
+# write the event id to the processed events file
+WriteIdToProcessedEventsFile($id);
+
+# first thing to do is run all the commands for this reminder:
+my $reminderCommands = $commands;
+while (my ($comm1, $comm2) = split /;/, $reminderCommands, 2) {
+    if (system("$comm1 &") != 0) {
+	die "Error calling $comm1 $!";
+    }
+    $reminderCommands = $comm2;
+}
+
+# now pop up the reminder message:
+
+print "\a"; # sound the system bell
+my $userResponse = system("gxmessage -timeout 0 -wrap -buttons 'OK':100,'Snooze 15 min':101,'Custom Snooze':102 " .
+			  "$text");
+$userResponse /= 256; # need to do this because of perl
+die "unexpected user reponse"
+    if (($userResponse > 1 && $userResponse < 100) || ($userResponse > 102));
+
+if ($userResponse == 100 || $userResponse == 1) {
+	# response of 1 indicates the user closed the window and 100 means he
+	# pressed OK
+	WriteIdToProcessedEventsFile($id);
+    exit 0;
+}
+
+my $snooze = 60;
+if ($userResponse == 101) {
+    $snooze *= 15;
+}
+else {
+    $userResponse = system("gxmessage -timeout 0 -wrap -buttons '5 min':100,'30 min':101,'1 hour':102,'2 hours':103," .
+			   "'4 hours':104,'1 day':105 \"$text
+                            How long?\"");
+    $userResponse /= 256; # need to do this because of perl
+    
+    if ($userResponse == 1) { # response of 1 indicates the user closed the window
+	$snooze *= 15; # 15 minutes is default
+    }
+    elsif ($userResponse == 100) {
+	$snooze *= 5;
+    }
+    elsif ($userResponse == 101) {
+	$snooze *= 30;
+    }
+    elsif ($userResponse == 102) {
+	$snooze *= 60;
+    }
+    elsif ($userResponse == 103) {
+	$snooze *= 120;
+    }
+    elsif ($userResponse == 104) {
+	$snooze *= 240;
+    }
+    elsif ($userResponse == 105) {
+	$snooze *= 1440;
+    }
+    else {
+	die "unexpected user reponse";
+    }
+}
+
+# reset the time to current time in case there has been a long delay between
+# user responses
+my $alarmDate = DateTime->now;
+$alarmDate->set_time_zone($timeZone);
+$alarmDate->set(second => 0);
+$alarmDate->add(seconds => $snooze);
+
+open(CALFILE, ">> $calFilename") 
+    or die "cannot open $calFilename: $!";
+
+# generate a new event id:
+$id = time;
+
+print CALFILE "SNOOZE ID:$id " . $alarmDate->year . "-" . $alarmDate->month . "-" . $alarmDate->day . " " .
+    $alarmDate->hour . ":" . $alarmDate->minute . " " . $text;
+
+if (defined $commands) {
+    print CALFILE ";" . $commands;
+}
+print CALFILE "\n";
+
+close CALFILE;

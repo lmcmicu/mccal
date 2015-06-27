@@ -1,0 +1,76 @@
+mccal: simple desktop reminder calendar
+=======================================
+
+requires:
+---------
+
+- Perl, Perl::DateTime, Perl::Time::HiRes, bash
+
+to install:
+-----------
+
+- copy the files addappointments, findappointment, remind,
+  run_findapps.sh, and viewcal to a directory in your executable path
+  (e.g., ~/bin).
+
+- copy the file commonfuncs.pm to your "library" directory. If you are
+  copying to a directory not visible to perl, you will have to
+  explicitly add:
+
+  BEGIN {
+        push @INC, "<your library directory>";
+  }
+
+  to the top of the files: findappointment, remind.
+
+- customise your window manager to run run_findapps.sh at startup.
+
+
+user interface
+--------------
+1) addappointments
+
+- writes an appointment entry to the calendar file
+
+Usage: addappointments [file]
+Entries must look like: [<weekly|biweekly|monthly|yearly> <N>]
+                        [remind <N>]
+                        [yyyy-mm-dd] HH:mm
+                        [<text>[; command1; command2; ...]]
+
+command1, command2, etc. are commands to execute upon the appointment
+coming due (in addition to the popup gxmessage).
+
+2) viewcal
+
+- displays appointments
+
+Usage:
+viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]
+
+3) run_findapps.sh
+
+- wrapper for findappointments (see below). Kills existing processes
+  before starting a new one.
+
+- call this in your window manager's initialization script.
+
+
+"internal" files:
+-----------------
+
+1) commonfuncs.pm
+
+- common functions used by all files
+
+2) remind
+
+- reminds the user of an appointment
+
+3) findappointment
+
+- checks calendar file periodically for due appointments
+
+-----
+
+To contact the author, see: www.michaelcuffaro.com
