@@ -1,10 +1,10 @@
-mccal: simple desktop reminder calendar
-=======================================
+mccal: simple command line UNIX/Linux reminder calendar
+=======================================================
 
 requires:
 ---------
 
-- Perl, Perl::DateTime, Perl::Time::HiRes, bash
+- Perl, Perl::DateTime, Perl::Time::HiRes, bash, gxmessage
 
 to install:
 -----------
