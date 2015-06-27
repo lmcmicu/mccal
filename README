@@ -1,10 +1,31 @@
-mccal: simple command line UNIX/Linux reminder calendar
-=======================================================
+mccal: simple reminder calendar
+===============================
+
+not a "visual" calendar by any stretch of the imagination. This
+simple little program is mainly useful for giving you reminders, which
+you can snooze (as often as you like) for 5, 15, 30 minutes, 1, 2, 4
+hours, or 1 day. None of the (at the time I wrote this) available
+calendars for Linux/UNIX had this kind of snoozing functionality. This
+is the main reason I wrote mccal.
+
+When an appointment becomes due, the program will pop up a gxmessage
+window with the appointment text, which you can then dismiss or snooze
+as desired. The program also allows you to optionally indicate a set
+of commands it should run at that time (e.g., emailing someone,
+ringing a bell, etc.).
+
+It would be easily possible to hack the code slightly to replace the
+gxmessage reminder popup window with something different and/or more
+(or less!) snazzy. In the future I will make this completely
+customisable in a config file.
+
+Other desirable features will also eventually implemented.
+
 
 requires:
 ---------
 
-- Perl, Perl::DateTime, Perl::Time::HiRes, bash, gxmessage
+- Perl, Perl::DateTime, Perl::Time::HiRes, bash, gxmessage.
 
 to install:
 -----------
