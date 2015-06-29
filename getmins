@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+use File::Basename;
+
+use strict;
+
+my $timeArg = $ARGV[0];
+my $amount = 0;
+my $unit = "m";
+
+if ($timeArg !~ /^(\d+)([m|h|d|w]){0,1}$/) {
+	print "Usage: " . basename($0) . " NUMBER[m|h|d|w]\n";
+	exit 1;
+}
+else {
+	$amount = $1;
+	if (defined($2)) {
+		$unit = $2;
+	}
+	else {
+		$unit = "m";
+	}
+}
+
+my $minutes = 0;
+if ($unit eq "m") {
+	$minutes = $amount;
+}
+elsif ($unit eq "h") {
+	$minutes = $amount * 60;
+}
+elsif ($unit eq "d") {
+	$minutes = $amount * 1440;
+}
+elsif ($unit eq "w") {
+	$minutes = $amount * 10080;
+}
+
+print "$minutes\n";
+exit 0;

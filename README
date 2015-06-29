@@ -76,6 +76,14 @@ viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterda
 
 - call this in your window manager's initialization script.
 
+4) getmins
+
+Usage: getmins NUMBER[m|h|d|w]
+
+- handy extra tool to help in specyfying reminder times. Use like this:
+
+$ echo "remind `getmins 24h` 2015-07-09 20:00 Office party"|addappointments 
+
 
 "internal" files:
 -----------------
