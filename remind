@@ -27,8 +27,7 @@ use DateTime;
 use Time::HiRes qw ( time );
 use commonfuncs;
 
-#chomp (my $timeZone = `cat /etc/timezone`);
-my $timeZone = "America/Toronto";
+chomp (my $timeZone = `cat /etc/timezone`);
 my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
 
 sub WriteIdToProcessedEventsFile {
