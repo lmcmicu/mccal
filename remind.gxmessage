@@ -68,13 +68,11 @@ while (my ($comm1, $comm2) = split /;/, $reminderCommands, 2) {
 print "\a"; # sound the system bell
 my $userResponse;
 my $retVal;
-my $reminderText = $text;
-$reminderText =~ s/\"//g;
-my $prog = "zenity --entry "
-	. "--ok-label Snooze --cancel-label Dismiss "
-	. "--title \'mccal reminder\' "
-	. "--text=\""
-	. "$reminderText \n\n"
+my $prog = "gxmessage -bg lightgrey -entry -wrap "
+	. "-buttons \'Snooze:0,Dismiss:1\' "
+	. "-default Snooze -title \'mccal reminder\' "
+	. "\""
+	. "$text \n\n"
 	. "Either click Dismiss to confirm or enter the amount\n"
 	. "of time you would like to snooze this alarm for\n"
 	. "(<num>\[m\|h\|d\])."
