@@ -50,11 +50,11 @@ sub WriteIdToProcessedEventsFile {
 my ($calFilename, $id, $reminder) = split / /, "@ARGV", 3;
 my ($text, $commands) = split /;/, $reminder, 2; 
 
-# write the event id to the processed events file.
-# Note that the reason we do this immediately is because
-# if we don't then the next time findappointment runs (i.e.
-# a minute from now) it will find this event which it will see
-# as unprocessed and pop up a duplicate reminder.
+# Write the event id to the processed events file. Note that the reason we do
+# this immediately is because if we don't, and the user doesn't either dismiss
+# or snooze the reminder before findappointment enters its next iteration,
+# then findappointment will view the event as unprocessed and pop up another
+# reminder for the same event, and so on and on and on.
 WriteIdToProcessedEventsFile($id);
 
 # first thing to do is run all the commands for this reminder:
@@ -89,7 +89,6 @@ do {
 
 if ($retVal != 0) {
 	# user pressed the Dismiss button.
-	WriteIdToProcessedEventsFile($id);
 	exit 0;
 }
 
