@@ -196,6 +196,10 @@ sub GetUsage {
 		}
 	    }
 	}
+
+	if (system("synccal --both") != 0) {
+		print STDERR "Could not push calendar to remote host: $!";
+	}
 	print "OK\n";
     }
 }

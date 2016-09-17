@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2014 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
@@ -29,6 +29,7 @@ use commonfuncs;
 my $calFilename = "$ENV{HOME}/.mycalendar.txt";
 my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
 chomp (my $timeZone = `cat /etc/timezone`);
+my $sleep_val = 90;
 
 sub SearchForID {
 	# searches line by line. Match is by whole line only.
@@ -50,12 +51,15 @@ sub SearchForID {
 # main processing starts here
 
 for (;;) {
+	if (system("synccal --pull") != 0) {
+		MailError("Could not retrieve remote calendar: $!");
+	}
     if (!open(CALFILE, "< $calFilename")) {
 		MailError "cannot open $calFilename: $!";
-		sleep 60;
+		sleep $sleep_val;
 		next;
     }
-    
+
     my $currDate = DateTime->now;
     $currDate->set_time_zone($timeZone);
     $currDate->set(second => 0);
@@ -105,5 +109,5 @@ for (;;) {
 		}
     }
     
-    sleep 60;
+    sleep $sleep_val;
 } # end of main loop

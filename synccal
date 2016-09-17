@@ -1,0 +1,82 @@
+#!/usr/bin/perl
+
+# Copyright 2014-2016 Michael Cuffaro
+# 
+# This file is part of mccal.
+# 
+# mccal is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# mccal is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with mccal.  If not, see <http://www.gnu.org/licenses/>.
+
+use Net::OpenSSH;
+use strict;
+
+
+my $cal_file = ".mycalendar.txt";
+my $processed_file = ".mycalendar_processed.txt";
+
+my $remote_host = "michaelcuffaro.com";
+my $remote_dir = "/big/dom/xmichaelcuffaro/mcuffaro/calfiles/";
+
+my $local_dir = "$ENV{HOME}/";
+
+my $remote_cal = $remote_dir . $cal_file;
+my $remote_processed = $remote_dir . $processed_file;
+
+my $local_cal = $local_dir . $cal_file;
+my $local_processed = $local_dir . $processed_file;
+
+
+sub PullCal {
+	my $ssh = Net::OpenSSH->new($remote_host);
+	$ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
+
+	$ssh->rsync_get({copy_attrs => 1}, $remote_cal, $remote_processed, $local_dir);
+	$ssh->error and die "Couldn't get calendar files: ". $ssh->error . "\n";
+
+	return 0;
+}
+
+
+sub PushCal {
+	my $ssh = Net::OpenSSH->new($remote_host);
+	$ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
+
+	$ssh->rsync_put({copy_attrs => 1}, $local_cal, $local_processed, $remote_dir);
+	$ssh->error and die "Couldn't put calendar files: ". $ssh->error . "\n";
+
+	return 0;
+}
+
+
+if (scalar @ARGV != 1 || $ARGV[0] !~ /^(--push|--pull|--both)$/) {
+	print "Usage: $0 <--push|--pull|--both>\n";
+	exit 1;
+}
+
+if ($ARGV[0] eq "--push") {
+	print "Pushing\n";
+	PushCal();
+}
+elsif ($ARGV[0] eq "--pull") {
+	print "Pulling\n";
+	PullCal();
+}
+elsif ($ARGV[0] eq "--both") {
+	print "Pulling\n";
+	PullCal();
+	print "Pushing\n";
+	PushCal();
+}
+else {
+	print "Usage: $0 <--push|--pull|--both>\n";
+}

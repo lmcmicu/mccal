@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2014 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 

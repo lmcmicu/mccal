@@ -66,8 +66,11 @@ while (my ($comm1, $comm2) = split /;/, $reminderCommands, 2) {
     $reminderCommands = $comm2;
 }
 
-# now pop up the reminder message:
+# TODO: The following code block (up until retval != 0) should be put into three
+# different functions for cocoa, gxmessage, and zenity, instead of
+# having three different files as we do now.
 
+# now pop up the reminder message:
 print "\a"; # sound the system bell
 my $userResponse;
 my $retVal;
@@ -135,3 +138,7 @@ if (defined $commands) {
 print CALFILE "\n";
 
 close CALFILE;
+
+if (system("synccal --both") != 0) {
+	MailError("Could not push calendar to remote host: $!");
+}

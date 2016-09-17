@@ -135,3 +135,7 @@ if (defined $commands) {
 print CALFILE "\n";
 
 close CALFILE;
+
+if (system("synccal --both") != 0) {
+	MailError("Could not push calendar to remote host: $!");
+}
