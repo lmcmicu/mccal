@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2014 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
@@ -29,52 +29,53 @@ my $calFilename = "$ENV{HOME}/.mycalendar.txt";
 chomp (my $timeZone = `cat /etc/timezone`);
 my $DEBUG = 0;
 
+
 sub ValidateDate {
     my ($year, $month, $day) = @_;
 
     if ($month < 1 || $month > 12) {
-	print STDERR "Invalid month: $month\n";
-	return 0;
+        print STDERR "Invalid month: $month\n";
+        return 0;
     }
     elsif ($month == 1 || $month == 3 ||
-	   $month == 5 || $month == 7 ||
-	   $month == 8 || $month == 10) {
-	if ($day < 1 || $day > 31) {
-	    print STDERR "Invalid date: $year-$month-$day\n";
-	    return 0;
-	}
+           $month == 5 || $month == 7 ||
+           $month == 8 || $month == 10) {
+        if ($day < 1 || $day > 31) {
+            print STDERR "Invalid date: $year-$month-$day\n";
+            return 0;
+        }
     }
     elsif ($month == 2) {
-	if ($day == 29) {
-	    if ($year % 4 != 0) {
-		print STDERR "Invalid date: $year-$month-$day\n";
-		return 0;
-	    }
-	    elsif ($year % 100 == 0 && $year % 400 != 0) {
-		print STDERR "Invalid date: $year-$month-$day\n";
-		return 0;
-	    }
-	}
-	elsif ($day < 1 || $day > 28) {
-	    print STDERR "Invalid date: $year-$month-$day\n";
-	    return 0;
-	}
+        if ($day == 29) {
+            if ($year % 4 != 0) {
+                print STDERR "Invalid date: $year-$month-$day\n";
+                return 0;
+            }
+            elsif ($year % 100 == 0 && $year % 400 != 0) {
+                print STDERR "Invalid date: $year-$month-$day\n";
+                return 0;
+            }
+        }
+        elsif ($day < 1 || $day > 28) {
+            print STDERR "Invalid date: $year-$month-$day\n";
+            return 0;
+        }
     }
     elsif ($day < 1 || $day > 30) {
-	print STDERR "Invalid date: $year-$month-$day\n";
-	return 0;
+        print STDERR "Invalid date: $year-$month-$day\n";
+        return 0;
     }
     return 1;
 }
 
+
 sub ValidateTime {
     my ($hour, $minute) = @_;
-    
-    # validate the time
+
     if ($hour < 0 || $hour > 23 ||
-	$minute < 0 || $minute > 59) {
-	print STDERR "Invalid time: $hour:$minute\n";
-	return 0;
+        $minute < 0 || $minute > 59) {
+        print STDERR "Invalid time: $hour:$minute\n";
+        return 0;
     }
     return 1;
 }
@@ -86,120 +87,125 @@ sub PrintDateToFile {
     my $dateToRing = $dateToPrint->clone;
     $dateToRing->add(minutes => -$remind);
     
-    open(CALFILE, ">> $calFilename") 
-	or die "cannot open $calFilename: $!";
+    open(CALFILE, ">> $calFilename") or die "cannot open $calFilename: $!";
 
-	# print an id based on a timestamp
-	print CALFILE "ID:" . time . " ";
+    # print an id based on a timestamp
+    print CALFILE "ID:" . time . " ";
 
     print CALFILE
-	$dateToRing->year . "-" . 
-	$dateToRing->month . "-" . 
-	$dateToRing->day . " " .
-	$dateToRing->hour . ":" .
-	$dateToRing->minute . " " .
-	"\"" .
-	$dateToPrint->year . "-" .
-	$dateToPrint->month . "-" .
-	$dateToPrint->day . " " .
-	$dateToPrint->hour . ":" .
-	$dateToPrint->minute . " " .
-	$text .
-	"\"";
+        $dateToRing->year . "-" . 
+        $dateToRing->month . "-" . 
+        $dateToRing->day . " " .
+        $dateToRing->hour . ":" .
+        $dateToRing->minute . " " .
+        "\"" .
+        $dateToPrint->year . "-" .
+        $dateToPrint->month . "-" .
+        $dateToPrint->day . " " .
+        $dateToPrint->hour . ":" .
+        $dateToPrint->minute . " " .
+        $text .
+        "\"";
     
     if (defined($cmd)) {
-	print CALFILE "; $cmd";
+        print CALFILE "; $cmd";
     }
     print CALFILE "\n";
-
     close CALFILE;
 }
 
 sub GetUsage {
     return
-	"Entries must look like: [<weekly|biweekly|monthly|yearly> <N>]\n" .
-	"                        [remind <N>]\n" .
-	"                        [yyyy-mm-dd] HH:mm\n" .
-	"                        [<text>[; command1; command2; ...]]";
+        "Entries must look like: [<weekly|biweekly|monthly|yearly> <N>]\n" .
+        "                        [remind <N>]\n" .
+        "                        [yyyy-mm-dd] HH:mm\n" .
+        "                        [<text>[; command1; command2; ...]]";
 }
 
 ###############################################################################
 
 { ## Main processing starts here
     if ($ARGV[0] =~ /^(-){1,2}h(elp){0,1}$/) {
-	chomp(my $prog = `basename $0`);
-	print "Usage: $prog [file]\n";
-	print GetUsage() . "\n";
-	exit 1;
+        chomp(my $prog = `basename $0`);
+        print "Usage: $prog [file]\n";
+        print GetUsage() . "\n";
+        exit 1;
     }
-    
-    while (chomp(my $nextLine = <ARGV>)) {
-	next if $nextLine =~ /^\s*([\#]+.*)*\s*$/;  # ignore comments/blanks
-	if ($nextLine !~
-	    /^((weekly|biweekly|monthly|yearly)\s+(\d+)\s+){0,1}
-	    (remind\s+(\d+)\s+){0,1}
-	    ((\d{1,4})-(\d{1,2})-(\d{1,2})\s+){0,1}
-	    (\d{1,2}):(\d{1,2})
-	    (\s+(([\S\s])*)){0,1}$/x
-	    ) {
-	    print STDERR GetUsage() . "\n";
-	    next;
-	}
-	
-	print "1: $1\n2: $2\n3: $3\n4: $4\n5: $5\n6: $6\n7: $7\n" .
-	    "8: $8\n9: $9\n10: $10\n11: $11\n12: $12\n13: $13\n" if $DEBUG; 
-	
-	my ($repeat, $repVal, $remind, $year, $month, $day, $hour, $minute, $text) =
-	    ($2, $3, $5, $7, $8, $9, $10, $11, $13);
-	
-	my $appDate;
-	if (!defined $year) {
-	    $appDate = DateTime->now;
-	    $appDate->set_time_zone($timeZone);
-	    $appDate->set(second => 0);
-	}
-	else {
-	    next if (!ValidateDate($year, $month, $day));
-	    $appDate = DateTime->new(year=>$year,
-				     month=>$month,
-				     day=>$day);
-	}
-	
-	next if (!ValidateTime($hour, $minute));
-	$appDate->set(hour=>$hour, minute=>$minute);
-	$remind = 0 if (!defined($remind));
-	
-	PrintDateToFile($appDate, $remind, $text);
-	if (defined $repeat) {
-	    if ($repeat eq "weekly") {
-		for (my $i = 1; $i < $repVal; $i++) {
-		    $appDate->add(weeks=>1);
-		    PrintDateToFile($appDate, $remind, $text);
-		}
-	    }
-	    if ($repeat eq "biweekly") {
-		for (my $i = 1; $i < $repVal; $i++) {
-		    $appDate->add(weeks=>2);
-		    PrintDateToFile($appDate, $remind, $text);
-		}
-	    }
-	    elsif ($repeat eq "monthly") {
-		for (my $i = 1; $i < $repVal; $i++) {
-		    $appDate->add(months=>1);
-		    PrintDateToFile($appDate, $remind, $text);
-		}
-	    }
-	    elsif ($repeat eq "yearly") {
-		for (my $i = 1; $i < $repVal; $i++) {
-		    $appDate->add(years=>1);
-		    PrintDateToFile($appDate, $remind, $text);
-		}
-	    }
-	}
 
-	if (system("synccal --both") != 0) {
-		print STDERR "Could not push calendar to remote host: $!";
-	}
-	print "OK\n";
+    while (chomp(my $nextLine = <ARGV>)) {
+        next if $nextLine =~ /^\s*([\#]+.*)*\s*$/;  # ignore comments/blanks
+        if ($nextLine !~
+            /^((weekly|biweekly|monthly|yearly)\s+(\d+)\s+){0,1}
+               (remind\s+(\d+)\s+){0,1}
+               ((\d{1,4})-(\d{1,2})-(\d{1,2})\s+){0,1}
+               (\d{1,2}):(\d{1,2})
+               (\s+(([\S\s])*)){0,1}$/x
+            ) {
+            print STDERR GetUsage() . "\n";
+            next;
+        }
+
+        print "1: $1\n2: $2\n3: $3\n4: $4\n5: $5\n6: $6\n7: $7\n" .
+            "8: $8\n9: $9\n10: $10\n11: $11\n12: $12\n13: $13\n" if $DEBUG; 
+
+        my ($repeat, $repVal, $remind, $year, $month, $day, $hour, $minute, $text) =
+            ($2, $3, $5, $7, $8, $9, $10, $11, $13);
+
+        my $appDate;
+        if (!defined $year) {
+            $appDate = DateTime->now;
+            $appDate->set_time_zone($timeZone);
+            $appDate->set(second => 0);
+        }
+        else {
+            next if (!ValidateDate($year, $month, $day));
+            $appDate = DateTime->new(year=>$year,
+                                     month=>$month,
+                                     day=>$day);
+        }
+
+        next if (!ValidateTime($hour, $minute));
+        $appDate->set(hour=>$hour, minute=>$minute);
+        $remind = 0 if (!defined($remind));
+
+        # Pull the calendar files from the network before writing.
+        if (system("synccal --pull") != 0) {
+            MailError("Could not retrieve remote calendar.");
+        }
+
+        PrintDateToFile($appDate, $remind, $text);
+
+        if (defined $repeat) {
+            if ($repeat eq "weekly") {
+                for (my $i = 1; $i < $repVal; $i++) {
+                    $appDate->add(weeks=>1);
+                    PrintDateToFile($appDate, $remind, $text);
+                }
+            }
+            if ($repeat eq "biweekly") {
+                for (my $i = 1; $i < $repVal; $i++) {
+                    $appDate->add(weeks=>2);
+                    PrintDateToFile($appDate, $remind, $text);
+                }
+            }
+            elsif ($repeat eq "monthly") {
+                for (my $i = 1; $i < $repVal; $i++) {
+                    $appDate->add(months=>1);
+                    PrintDateToFile($appDate, $remind, $text);
+                }
+            }
+            elsif ($repeat eq "yearly") {
+                for (my $i = 1; $i < $repVal; $i++) {
+                    $appDate->add(years=>1);
+                    PrintDateToFile($appDate, $remind, $text);
+                }
+            }
+        }
+
+        # Save back to the network once writes are done.
+        if (system("synccal --push") != 0) {
+            print STDERR "Could not push calendar to remote host.";
+        }
+        print "OK\n";
     }
 }

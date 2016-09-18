@@ -26,11 +26,11 @@ our @EXPORT = qw(MailError);
 use strict;
 
 sub MailError {
-	my ($text) = @_;
+    my ($text) = @_;
 
-	my $user = `whoami`;
-	my $body = "";
-	system("echo $body|mutt -s \"$text\" $user");
+    my $user = `whoami`;
+    my $body = "";
+    system("echo $body|mutt -s \"$text\" $user");
 }
 
 1;

@@ -1,36 +1,30 @@
 mccal: simple reminder calendar
 ===============================
 
-not a "visual" calendar by any stretch of the imagination. This
+mccal is not a "visual" calendar by any stretch of the imagination. This
 simple little program is mainly useful for giving you reminders, which
-you can snooze (as often as you like) for 5, 15, 30 minutes, 1, 2, 4
-hours, or 1 day. None of the (at the time I wrote this) available
+you can snooze (as often as you like) for however many minutes, hours, or
+days that you like. None of the (at the time I wrote this) available
 calendars for Linux/UNIX had this kind of snoozing functionality. This
 is the main reason I wrote mccal.
 
-When an appointment becomes due, the program will pop up a gxmessage
-window with the appointment text, which you can then dismiss or snooze
-as desired. The program also allows you to optionally indicate a set
-of commands it should run at that time (e.g., emailing someone,
-ringing a bell, etc.).
-
-It would be easily possible to hack the code slightly to replace the
-gxmessage reminder popup window with something different and/or more
-(or less!) snazzy. In the future I will make this completely
-customisable in a config file.
-
-Other desirable features will also eventually implemented.
+When an appointment becomes due, the program will pop up a window with the
+appointment text, which you can then dismiss or snooze as desired. The
+program also allows you to optionally indicate a set of commands it should
+run at that time (e.g., emailing someone, ringing a bell, etc.). mccal uses
+an external program to implement the window popup. Currently the options are
+zenity, gxmessage, and cocoadialog (Mac OS).
 
 
 requires:
 ---------
 
-- Perl, Perl::DateTime, Perl::Time::HiRes, bash, gxmessage.
+- Perl, Perl::DateTime, Perl::Time::HiRes, Net::OpenSSH, bash, (gxmessage|zenity|cocoadialog)
 
 to install:
 -----------
 
-- copy the files addappointments, findappointment, remind,
+- copy the files addappointments, findappointment, remind, synccal,
   run_findapps.sh, and viewcal to a directory in your executable path
   (e.g., ~/bin).
 

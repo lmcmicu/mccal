@@ -21,6 +21,8 @@ use Net::OpenSSH;
 use strict;
 
 
+chomp(my $prog = `basename $0`);
+
 my $cal_file = ".mycalendar.txt";
 my $processed_file = ".mycalendar_processed.txt";
 
@@ -37,46 +39,40 @@ my $local_processed = $local_dir . $processed_file;
 
 
 sub PullCal {
-	my $ssh = Net::OpenSSH->new($remote_host);
-	$ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
+    my $ssh = Net::OpenSSH->new($remote_host);
+    $ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
 
-	$ssh->rsync_get({copy_attrs => 1}, $remote_cal, $remote_processed, $local_dir);
-	$ssh->error and die "Couldn't get calendar files: ". $ssh->error . "\n";
+    $ssh->rsync_get({copy_attrs => 1}, $remote_cal, $remote_processed, $local_dir);
+    $ssh->error and die "Couldn't get calendar files: ". $ssh->error . "\n";
 
-	return 0;
+    return 0;
 }
 
 
 sub PushCal {
-	my $ssh = Net::OpenSSH->new($remote_host);
-	$ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
+    # There should be no danger of two clients writing at the same time,
+    # so there's probably no need to implement a semaphore.
+    my $ssh = Net::OpenSSH->new($remote_host);
+    $ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
 
-	$ssh->rsync_put({copy_attrs => 1}, $local_cal, $local_processed, $remote_dir);
-	$ssh->error and die "Couldn't put calendar files: ". $ssh->error . "\n";
+    $ssh->rsync_put({copy_attrs => 1}, $local_cal, $local_processed, $remote_dir);
+    $ssh->error and die "Couldn't put calendar files: ". $ssh->error . "\n";
 
-	return 0;
+    return 0;
 }
 
 
-if (scalar @ARGV != 1 || $ARGV[0] !~ /^(--push|--pull|--both)$/) {
-	print "Usage: $0 <--push|--pull|--both>\n";
-	exit 1;
+if (scalar @ARGV != 1 || $ARGV[0] !~ /^(--push|--pull)$/) {
+    print "Usage: $prog <--push|--pull>\n";
+    exit 1;
 }
 
 if ($ARGV[0] eq "--push") {
-	print "Pushing\n";
-	PushCal();
+    PushCal();
 }
 elsif ($ARGV[0] eq "--pull") {
-	print "Pulling\n";
-	PullCal();
-}
-elsif ($ARGV[0] eq "--both") {
-	print "Pulling\n";
-	PullCal();
-	print "Pushing\n";
-	PushCal();
+    PullCal();
 }
 else {
-	print "Usage: $0 <--push|--pull|--both>\n";
+    print "Usage: $prog <--push|--pull>\n";
 }

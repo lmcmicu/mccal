@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-# Copyright 2014 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
@@ -19,7 +19,7 @@
 
 
 BEGIN {
-	push @INC, "/home/mike/lib";
+    push @INC, "/home/mike/lib";
 }
 
 use strict;
@@ -30,18 +30,114 @@ use commonfuncs;
 chomp (my $timeZone = `cat /etc/timezone`);
 my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
 
-sub WriteIdToProcessedEventsFile {
-	my ($idToWrite) = @_;
+# Set this to one of the PopupReminder<...> functions defined below.
+my $PopupFunction = \&PopupReminderZenity;
 
-	# write the id of the event to the processed events file
+
+sub PopupReminderZenity {
+    my ($text) = @_;
+    print "\a"; # sound the system bell
+    my $userResponse;
+    my $retVal;
+    my $reminderText = $text;
+    $reminderText =~ s/\"//g;
+    my $prog = "zenity --entry "
+        . "--ok-label Snooze --cancel-label Dismiss "
+        . "--title \'mccal reminder\' "
+        . "--text=\""
+        . "$reminderText \n\n"
+        . "Either click Dismiss to confirm or enter the amount\n"
+        . "of time you would like to snooze this alarm for\n"
+        . "(<num>\[m\|h\|d\])."
+        . "\"";
+    do {
+        $userResponse = `$prog`;
+        $retVal = $?;
+    } while ($retVal == 0
+             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
+                 || $userResponse =~ /^0+[mhd]{0,1}/));
+
+    if ($retVal != 0) {
+        # user pressed the Dismiss button.
+        return 0;
+    }
+    return $userResponse;
+}
+
+
+sub PopupReminderGxmessage {
+    my ($text) = @_;
+    print "\a"; # sound the system bell
+    my $userResponse;
+    my $retVal;
+    my $prog = "gxmessage -bg lightgrey -entry -wrap "
+        . "-buttons \'Snooze:0,Dismiss:1\' "
+        . "-default Snooze -title \'mccal reminder\' "
+        . "\""
+        . "$text \n\n"
+        . "Either click Dismiss to confirm or enter the amount\n"
+        . "of time you would like to snooze this alarm for\n"
+        . "(<num>\[m\|h\|d\])."
+        . "\"";
+    do {
+        $userResponse = `$prog`;
+        $retVal = $?;
+    } while ($retVal == 0
+             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
+                 || $userResponse =~ /^0+[mhd]{0,1}/));
+
+    if ($retVal != 0) {
+        # user pressed the Dismiss button.
+        return 0;
+    }
+    return $userResponse;
+}
+
+
+sub PopupReminderCocoa {
+    my ($text) = @_;
+    print "\a"; # sound the system bell
+    my @userResponse;
+    my $buttonPressed;
+    my $userResponse;
+    my $reminderText = $text;
+    $reminderText =~ s/\"//g;
+    my $prog = "cocoadialog inputbox "
+        . "--button1 Snooze --button2 Dismiss "
+        . "--no-cancel --float --title \'mccal reminder\' --informative-text \""
+        . "$reminderText \n\n"
+        . "Either click Dismiss to confirm or enter the "
+        . "amount of time you would like to snooze this alarm for (<num>\[m\|h\|d\])"
+        . "\"";
+    do {
+        @userResponse = `$prog`;
+        $buttonPressed = @userResponse[0];
+        $userResponse = @userResponse[1];
+    } while ($buttonPressed == 1
+             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
+                 || $userResponse =~ /^0+[mhd]{0,1}/));
+
+    if ($buttonPressed == 2) {
+        # user pressed the Dismiss button.
+        return 0;
+    }
+    return $userResponse;
+}
+
+
+sub WriteIdToProcessedEventsFile {
+    my ($idToWrite) = @_;
+
+    # write the id of the event to the processed events file
     if (!open(OUTFILE, ">> $processedEventsFilename")) {
-		MailError "cannot open $processedEventsFilename: $!";
-		return 0;
+        MailError "cannot open $processedEventsFilename: $!";
+        return 0;
     }
 
-	print OUTFILE "$idToWrite\n";
-	close OUTFILE;
+    print OUTFILE "$idToWrite\n";
+    close OUTFILE;
 }
+
 
 ##############################################################################
 ### main code starts here
@@ -55,65 +151,52 @@ my ($text, $commands) = split /;/, $reminder, 2;
 # or snooze the reminder before findappointment enters its next iteration,
 # then findappointment will view the event as unprocessed and pop up another
 # reminder for the same event, and so on and on and on.
+# Before writing, pull the calendar files from the network, and then push them
+# back when done.
+
+if (system("synccal --pull") != 0) {
+    MailError("Could not retrieve remote calendar.");
+}
+
 WriteIdToProcessedEventsFile($id);
 
-# first thing to do is run all the commands for this reminder:
+if (system("synccal --push") != 0) {
+    MailError("Could not push calendar to remote host.");
+}
+
+# Next thing to do is run all the commands for this reminder:
 my $reminderCommands = $commands;
 while (my ($comm1, $comm2) = split /;/, $reminderCommands, 2) {
     if (system("$comm1 &") != 0) {
-	die "Error calling $comm1 $!";
+        die "Error calling $comm1 $!";
     }
     $reminderCommands = $comm2;
 }
 
-# TODO: The following code block (up until retval != 0) should be put into three
-# different functions for cocoa, gxmessage, and zenity, instead of
-# having three different files as we do now.
-
 # now pop up the reminder message:
-print "\a"; # sound the system bell
-my $userResponse;
-my $retVal;
-my $reminderText = $text;
-$reminderText =~ s/\"//g;
-my $prog = "zenity --entry "
-	. "--ok-label Snooze --cancel-label Dismiss "
-	. "--title \'mccal reminder\' "
-	. "--text=\""
-	. "$reminderText \n\n"
-	. "Either click Dismiss to confirm or enter the amount\n"
-	. "of time you would like to snooze this alarm for\n"
-	. "(<num>\[m\|h\|d\])."
-	. "\"";
-do {
-	$userResponse = `$prog`;
-	$retVal = $?;
-} while ($retVal == 0
-		 && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
-			 || $userResponse =~ /^0+[mhd]{0,1}/));
-
-if ($retVal != 0) {
-	# user pressed the Dismiss button.
-	exit 0;
+my $userResponse = $PopupFunction->($text);
+if (!$userResponse) {
+    # user pressed the Dismiss button.
+    exit 0;
 }
 
 my $snooze;
 # convert user response into seconds
 if ($userResponse =~ /(.*)([mhd])$/) {
-	$snooze = $1;
-	my $timeModifier = $2;
-	if ($timeModifier eq "h") {
-		$snooze *= 3600;
-	}
-	elsif ($timeModifier eq "d") {
-		$snooze *= 86400;
-	}
-	else {
-		$snooze *= 60;
-	}
+    $snooze = $1;
+    my $timeModifier = $2;
+    if ($timeModifier eq "h") {
+        $snooze *= 3600;
+    }
+    elsif ($timeModifier eq "d") {
+        $snooze *= 86400;
+    }
+    else {
+        $snooze *= 60;
+    }
 }
 else {
-	$snooze = $userResponse *= 60;
+    $snooze = $userResponse *= 60;
 }
 
 # reset the time to current time in case there has been a long delay between
@@ -123,22 +206,28 @@ $alarmDate->set_time_zone($timeZone);
 $alarmDate->set(second => 0);
 $alarmDate->add(seconds => $snooze);
 
-open(CALFILE, ">> $calFilename") 
-    or die "cannot open $calFilename: $!";
+# Pull the calendar just in case someone has pushed to while we were waiting for
+# the user response.
+if (system("synccal --pull") != 0) {
+    MailError("Could not retrieve remote calendar.");
+}
+
+open(CALFILE, ">> $calFilename") or die "cannot open $calFilename: $!";
 
 # generate a new event id:
 $id = time;
 
-print CALFILE "SNOOZE ID:$id " . $alarmDate->year . "-" . $alarmDate->month . "-" . $alarmDate->day . " " .
-    $alarmDate->hour . ":" . $alarmDate->minute . " " . $text;
+print CALFILE "SNOOZE ID:$id " . $alarmDate->year . "-" . $alarmDate->month . "-" 
+    . $alarmDate->day . " " . $alarmDate->hour . ":" . $alarmDate->minute . " " 
+    . $text;
 
 if (defined $commands) {
     print CALFILE ";" . $commands;
 }
 print CALFILE "\n";
-
 close CALFILE;
 
-if (system("synccal --both") != 0) {
-	MailError("Could not push calendar to remote host: $!");
+# Write to the network file when done writing
+if (system("synccal --push") != 0) {
+    MailError("Could not push calendar to remote host.");
 }
