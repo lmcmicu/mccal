@@ -30,8 +30,7 @@ use commonfuncs;
 my $calFilename = "$ENV{HOME}/.mycalendar.txt";
 my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
 chomp (my $timeZone = `cat /etc/timezone`);
-my $sleep_val = 60;
-my $iters_between_pulls = 10;
+my $sleep_val = 300;
 
 
 sub SearchForID {
@@ -53,21 +52,9 @@ sub SearchForID {
 
 #############################################################################
 # main processing starts here
-
-my $iters_since_last_pull = 0;
 for (;;) {
-    if ($iters_since_last_pull >= $iters_between_pulls) {
-        if (system("synccal --pull") != 0) {
-            $iters_since_last_pull++;
-            MailError("Could not retrieve remote calendar "
-                      . "(haven't pulled in $iters_since_last_pull iterations).");
-        }
-        else {
-            $iters_since_last_pull = 0;
-        }
-    }
-    else {
-        $iters_since_last_pull++;
+    if (system("synccal --pull") != 0) {
+        MailError("Could not retrieve remote calendar.");
     }
 
     if (!open(CALFILE, "< $calFilename")) {
