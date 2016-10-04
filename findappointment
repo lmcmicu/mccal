@@ -55,6 +55,8 @@ sub SearchForID {
 for (;;) {
     if (system("synccal --pull") != 0) {
         MailError("Could not retrieve remote calendar.");
+        sleep $sleep_val;
+        next;
     }
 
     if (!open(CALFILE, "< $calFilename")) {

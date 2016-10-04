@@ -42,7 +42,7 @@ sub PullCal {
     my $ssh = Net::OpenSSH->new($remote_host);
     $ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
 
-    $ssh->rsync_get({copy_attrs => 1}, $remote_cal, $remote_processed, $local_dir);
+    $ssh->rsync_get({copy_attrs => 1, update => 1}, $remote_cal, $remote_processed, $local_dir);
     $ssh->error and die "Couldn't get calendar files: ". $ssh->error . "\n";
 
     return 0;
@@ -55,7 +55,7 @@ sub PushCal {
     my $ssh = Net::OpenSSH->new($remote_host);
     $ssh->error and die "Couldn't establish SSH connection: ". $ssh->error . "\n";
 
-    $ssh->rsync_put({copy_attrs => 1}, $local_cal, $local_processed, $remote_dir);
+    $ssh->rsync_put({copy_attrs => 1, update => 1}, $local_cal, $local_processed, $remote_dir);
     $ssh->error and die "Couldn't put calendar files: ". $ssh->error . "\n";
 
     return 0;
