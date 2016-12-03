@@ -170,7 +170,7 @@ sub GetUsage {
 
         # Pull the calendar files from the network before writing.
         if (system("synccal --pull") != 0) {
-            MailError("Could not retrieve remote calendar.");
+            die "Could not retrieve remote calendar!";
         }
 
         PrintDateToFile($appDate, $remind, $text);
@@ -204,7 +204,7 @@ sub GetUsage {
 
         # Save back to the network once writes are done.
         if (system("synccal --push") != 0) {
-            print STDERR "Could not push calendar to remote host.";
+            print STDERR "WARNING: Could not push calendar to remote host.";
         }
         print "OK\n";
     }
