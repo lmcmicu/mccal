@@ -108,7 +108,8 @@ elsif ($ARGV[$dateArgvPos] =~ /^(-){1,2}h(elp){0,1}$/) {
     exit 1;
 }
 else {
-    $dateToCheck = $ARGV[$dateArgvPos];
+    $dateToCheck = join(' ', @ARGV[$dateArgvPos..scalar(@ARGV)]);
+    $dateToCheck =~ s/^\s+|\s+$//g;
 }
 
 if ($dateToCheck =~ /^\d{1,4}(-\d{1,2}){0,2}$/) {
@@ -146,8 +147,21 @@ elsif ($dateToCheck =~ /^today$/) {
     my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
     PrintEntries SortEntries @lines;
 }
-elsif ($dateToCheck =~ /^month$/) {
-    my $thisMonth = `date +"%Y-%m"`;
+elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}month\s*$/) {
+    my $addendum = 0;
+    if ($dateToCheck =~ /^last(\s+)month$/) {
+        $addendum = -1;
+    }
+    elsif ($dateToCheck =~ /^next(\s+)month$/) {
+        $addendum = 1;
+    }
+
+    my $monthStr = 'date +"%Y-%m"';
+    if ($addendum != 0) {
+        $monthStr .= ' --date="' . $addendum . ' month"';
+    }
+
+    my $thisMonth = `$monthStr`;
     chomp $thisMonth;
     my ($year, $month) = split /-/, $thisMonth, 2;
     # strip leading zeros:
@@ -158,8 +172,21 @@ elsif ($dateToCheck =~ /^month$/) {
     my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
     PrintEntries SortEntries @lines;
 }
-elsif ($dateToCheck =~ /^year$/) {
-    my $thisYear = `date +"%Y"`;
+elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}year\s*$/) {
+    my $addendum = 0;
+    if ($dateToCheck =~ /^last(\s+)year$/) {
+        $addendum = -1;
+    }
+    elsif ($dateToCheck =~ /^next(\s+)year$/) {
+        $addendum = 1;
+    }
+
+    my $yearStr = 'date +"%Y"';
+    if ($addendum != 0) {
+        $yearStr .= ' --date="' . $addendum . ' year"';
+    }
+
+    my $thisYear = `$yearStr`;
     chomp $thisYear;
     # strip leading zeros:
     $thisYear =~ s/^\s*0*([1-9]+)/$1/;
@@ -182,11 +209,20 @@ else {
         $date->add(days=>-1);
         push @dates, $date;
     }
-    elsif ($dateToCheck =~ /^week$/) {
+    elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}week\s*$/) {
         my $date = DateTime->now;
         $date->set_time_zone($timeZone);
 
+        my $addendum = 0;
+        if ($dateToCheck =~ /^last(\s+)week$/) {
+            $addendum = -1;
+        }
+        elsif ($dateToCheck =~ /^next(\s+)week$/) {
+            $addendum = 1;
+        }
+
         $date->add(days => -($date->day_of_week - 1));
+        $date->add(days => $addendum * 7);
         my $firstdate = $date->clone;
         push @dates, $firstdate;
         
@@ -197,7 +233,7 @@ else {
         }
     }
     else {
-        print STDERR "Invalid date\n";
+        print STDERR "Invalid date: " . $dateToCheck . "\n";
         exit 1;
     }
 
