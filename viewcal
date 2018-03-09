@@ -103,7 +103,7 @@ if (!defined $ARGV[$dateArgvPos]) {
 }
 elsif ($ARGV[$dateArgvPos] =~ /^(-){1,2}h(elp){0,1}$/) {
     chomp(my $prog = `basename $0`);
-    print "Usage:\n$prog [-f <calendar file>] [([next|last](<year>|<month>|<week>))|<today>|<tomorrow>|" .
+    print "Usage:\n$prog [-f <calendar file>] [([next|last](<year>|<month>|<week>|monday|tuesday|wednesday|thursday|friday|saturday|sunday))|<today>|<tomorrow>|" .
         "<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]\n";
     exit 1;
 }
@@ -209,27 +209,32 @@ else {
         $date->add(days=>-1);
         push @dates, $date;
     }
-    elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}week\s*$/) {
+    elsif ($dateToCheck =~ /^((last|next)\s+){0,1}(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/) {
+        my $range = $3;
         my $date = DateTime->now;
         $date->set_time_zone($timeZone);
 
         my $addendum = 0;
-        if ($dateToCheck =~ /^last(\s+)week$/) {
+        if ($dateToCheck =~ /^last/) {
             $addendum = -1;
         }
-        elsif ($dateToCheck =~ /^next(\s+)week$/) {
+        elsif ($dateToCheck =~ /^next/) {
             $addendum = 1;
         }
 
         $date->add(days => -($date->day_of_week - 1));
         $date->add(days => $addendum * 7);
         my $firstdate = $date->clone;
-        push @dates, $firstdate;
+        if ($range eq "week" || lc($firstdate->day_name) eq $range) {
+            push @dates, $firstdate;
+        }
         
         for (my $i = 0; $i < 6; $i++) {
             $date->add(days=>1);
             my $tmpdate = $date->clone;
-            push @dates, $tmpdate;
+            if ($range eq "week" || lc($tmpdate->day_name) eq $range) {
+                push @dates, $tmpdate;
+            }
         }
     }
     else {
