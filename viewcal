@@ -103,7 +103,7 @@ if (!defined $ARGV[$dateArgvPos]) {
 }
 elsif ($ARGV[$dateArgvPos] =~ /^(-){1,2}h(elp){0,1}$/) {
     chomp(my $prog = `basename $0`);
-    print "Usage:\n$prog [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|" .
+    print "Usage:\n$prog [-f <calendar file>] [([next|last](<year>|<month>|<week>))|<today>|<tomorrow>|" .
         "<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]\n";
     exit 1;
 }
