@@ -209,10 +209,14 @@ else {
         $date->add(days=>-1);
         push @dates, $date;
     }
-    elsif ($dateToCheck =~ /^((last|next)\s+){0,1}(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/) {
+    elsif ($dateToCheck =~ /^((last|next)\s*){0,1}(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/) {
         my $range = $3;
         my $date = DateTime->now;
         $date->set_time_zone($timeZone);
+
+        if ($range eq "week") {
+            $date->add(days => -($date->day_of_week - 1));
+        }
 
         my $addendum = 0;
         if ($dateToCheck =~ /^last/) {
@@ -221,9 +225,8 @@ else {
         elsif ($dateToCheck =~ /^next/) {
             $addendum = 1;
         }
-
-        $date->add(days => -($date->day_of_week - 1));
         $date->add(days => $addendum * 7);
+
         my $firstdate = $date->clone;
         if ($range eq "week" || lc($firstdate->day_name) eq $range) {
             push @dates, $firstdate;
