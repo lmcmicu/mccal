@@ -29,6 +29,7 @@ use commonfuncs;
 
 my $calFilename = "$ENV{HOME}/.mycalendar.txt";
 my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
+my $pauseFilename = "$ENV{HOME}/.pause_mccal";
 chomp (my $timeZone = `cat /etc/timezone`);
 my $sleep_val = 300;
 
@@ -50,12 +51,18 @@ sub SearchForID {
 }
 
 
-#############################################################################
+###################################################################################################
 # main processing starts here
 for (;;) {
+    # If there is a pause file, just sleep and try again later:
+    if (-e $pauseFilename) {
+        sleep $sleep_val;
+        next;
+    }
+
     if (system("synccal --pull") != 0) {
-        # TODO: we should not do next here but we should work locally.
-        # doing that doesn't work for some reason. fix it.
+        # TODO (Issue #12 in GitHub): we should not do next here but we
+        # should work locally. doing that doesn't work for some reason. fix it.
         MailError("Could not retrieve remote calendar.");
         sleep $sleep_val;
         next;
