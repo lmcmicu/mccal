@@ -21,7 +21,7 @@ import argparse
 import re
 
 
-def grep_period(calendar_file, year, month, day):
+def get_events(calendar_file, year, month, day):
   with open(calendar_file) as f:
     lines = []
     for line in f:
@@ -32,9 +32,38 @@ def grep_period(calendar_file, year, month, day):
       if day:
         grep_string += f"-0*{day}"
       if re.search(grep_string, line):
-        line = re.sub("^SNOOZE", "(Snoozed)", line)
         lines.append(line)
     return lines
+
+
+def sort_events(events):
+  pruned_events = []
+  for event in events:
+    # remove the initial id portion of the line:
+    event = re.sub("^(SNOOZE )?ID:\S+ ", "", event)
+    # remove date and time separators ("/" and ":")
+    event = re.sub(
+      r"([0-9]{1,4})-([0-9]{1,2})-([0-9]{1,2})\s+([0-9]{1,2}):([0-9]{1,2})\s+(.*)",
+      "\g<1> \g<2> \g<3> \g<4> \g<5> \g<6>",
+      event
+    );
+    event = event.split(' ', maxsplit=5)
+    for i in range(0,5):
+      event[i] = int(event[i])
+    pruned_events.append(event)
+
+  # Sort the entries:
+  sorted_events = sorted(pruned_events, key=lambda x: (x[0], x[1], x[2], x[3], x[4]))
+  # Add back the separators:
+  sorted_events = [
+    re.sub(
+      r"([0-9]{1,4})\s([0-9]{1,2})\s([0-9]{1,2})\s([0-9]{1,2})\s([0-9]{1,2})\s(.*)",
+      "\g<1>-\g<2>-\g<3> \g<4>:\g<5> \g<6>",
+      f"{x[0]} {x[1]} {x[2]} {x[3]} {x[4]} {x[5]}"
+    )
+    for x in sorted_events
+  ]
+  return sorted_events
 
 
 def main(calendar_file, modifier, time_period):
@@ -42,8 +71,9 @@ def main(calendar_file, modifier, time_period):
     year = int(m.groups()[0])
     month = int(m.groups()[2])
     day = int(m.groups()[4])
-    lines = grep_period(calendar_file, year, month, day)
-    print('\n'.join(lines))
+    events = get_events(calendar_file, year, month, day)
+    sorted_events = sort_events(events)
+    print('\n'.join(sorted_events))
   elif re.fullmatch(r'today', time_period):
     print("today")
   elif re.fullmatch(r'month', time_period):
