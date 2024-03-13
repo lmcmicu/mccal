@@ -21,9 +21,29 @@ import argparse
 import re
 
 
+def grep_period(calendar_file, year, month, day):
+  with open(calendar_file) as f:
+    lines = []
+    for line in f:
+      line = line.rstrip('\n')
+      grep_string = f"{year}"
+      if month:
+        grep_string += f"-0*{month}"
+      if day:
+        grep_string += f"-0*{day}"
+      if re.search(grep_string, line):
+        line = re.sub("^SNOOZE", "(Snoozed)", line)
+        lines.append(line)
+    return lines
+
+
 def main(calendar_file, modifier, time_period):
-  if re.fullmatch(r'\d{1,4}(-\d{1,2}){0,2}', time_period):
-    print("date")
+  if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
+    year = int(m.groups()[0])
+    month = int(m.groups()[2])
+    day = int(m.groups()[4])
+    lines = grep_period(calendar_file, year, month, day)
+    print('\n'.join(lines))
   elif re.fullmatch(r'today', time_period):
     print("today")
   elif re.fullmatch(r'month', time_period):
