@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/perl
 
 # Copyright 2014-2016 Michael Cuffaro
 # 
@@ -18,10 +18,19 @@
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
 
-export PATH=/home/mike/bin:$PATH
+package commonfuncs;
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(MailError);
 
-killall findappointment
+use strict;
 
-findappointment
+sub MailError {
+    my ($text) = @_;
 
-mailme findappointment terminated
+    my $user = `whoami`;
+    my $body = "";
+    system("echo $body|mutt -s \"$text\" $user");
+}
+
+1;

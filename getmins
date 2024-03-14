@@ -1,1 +1,56 @@
-#!/usr/bin/env python3
+#!/usr/bin/perl
+
+# Copyright 2014-2016 Michael Cuffaro
+# 
+# This file is part of mccal.
+# 
+# mccal is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# mccal is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with mccal.  If not, see <http://www.gnu.org/licenses/>.
+
+use File::Basename;
+use strict;
+
+my $timeArg = $ARGV[0];
+my $amount = 0;
+my $unit = "m";
+
+if ($timeArg !~ /^(\d+)([m|h|d|w]){0,1}$/) {
+    print "Usage: " . basename($0) . " NUMBER[m|h|d|w]\n";
+    exit 1;
+}
+else {
+    $amount = $1;
+    if (defined($2)) {
+        $unit = $2;
+    }
+    else {
+        $unit = "m";
+    }
+}
+
+my $minutes = 0;
+if ($unit eq "m") {
+    $minutes = $amount;
+}
+elsif ($unit eq "h") {
+    $minutes = $amount * 60;
+}
+elsif ($unit eq "d") {
+    $minutes = $amount * 1440;
+}
+elsif ($unit eq "w") {
+    $minutes = $amount * 10080;
+}
+
+print "$minutes\n";
+exit 0;

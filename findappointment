@@ -1,6 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/perl
 
-# Copyright 2014 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
@@ -17,26 +17,111 @@
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
-import os
 
-HOME = os.environ['HOME']
-CAL_FILENAME = f'{HOME}/.mycalendar.txt'
-PROCESSED_EVENTS_FILENAME = f'{HOME}/.mycalendar_processed.txt'
-PAUSE_FILENAME = f'{HOME}/.pause_mccal'
-SLEEP_VAL = 300
-with open('/etc/timezone') as tz_file:
-  TIME_ZONE = tz_file.readline().rstrip()
+BEGIN {
+    push @INC, "/home/mike/lib";
+}
+
+use strict;
+use DateTime;
+use commonfuncs;
 
 
-def main():
-  while True:
-    if os.path.exists(PAUSE_FILENAME):
-      time.sleep(SLEEP_VAL)
-      continue
-
-    break
+my $calFilename = "$ENV{HOME}/.mycalendar.txt";
+my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
+my $pauseFilename = "$ENV{HOME}/.pause_mccal";
+chomp (my $timeZone = `cat /etc/timezone`);
+my $sleep_val = 300;
 
 
-if __name__ == "__main__":
-  main()
+sub SearchForID {
+    # searches line by line. Match is by whole line only.
+    my ($stringToCheck) = @_;
+
+    if (!open(INFILE, "< $processedEventsFilename")) {
+        MailError "cannot open $processedEventsFilename: $!";
+        return 0;
+    }
+
+    while (chomp(my $nextLine = <INFILE>)) {
+        return 1 if $nextLine =~ $stringToCheck;
+    }
+
+    return 0;
+}
+
+
+###################################################################################################
+# main processing starts here
+for (;;) {
+    # If there is a pause file, just sleep and try again later:
+    if (-e $pauseFilename) {
+        sleep $sleep_val;
+        next;
+    }
+
+    if (system("synccal --pull") != 0) {
+        # TODO (Issue #12 in GitHub): we should not do next here but we
+        # should work locally. doing that doesn't work for some reason. fix it.
+        MailError("Could not retrieve remote calendar.");
+        sleep $sleep_val;
+        next;
+    }
+
+    if (!open(CALFILE, "< $calFilename")) {
+        MailError "cannot open $calFilename: $!";
+        sleep $sleep_val;
+        next;
+    }
+
+    my $currDate = DateTime->now;
+    $currDate->set_time_zone($timeZone);
+    $currDate->set(second => 0);
+
+    my @reminder_queue;
+    while (chomp(my $nextLine = <CALFILE>)) {
+        next if $nextLine =~ /^\s*([\#]+.*)*\s*$/;  # ignore comments
+        $nextLine =~ s/^SNOOZE (.*)/$1/;   # disregard the snooze marker
+
+        (my $tmpId, my $dom, my $tod, my $text) = split / /, $nextLine, 4;
+        (my $dummy, my $id) = split /:/, $tmpId;
+
+        # keep going if we've already processed this entry
+        next if (SearchForID($id) == 1);
+
+        # possibly put the next entry in the reminder queue
+        (my $year, my $month, my $day) = split /-/, $dom;
+        (my $hour, my $minute) = split /:/, $tod;
+
+        my $appDate = DateTime->new(year => $year,
+                                    month => $month,
+                                    day => $day,
+                                    hour => $hour,
+                                    minute => $minute,
+                                    time_zone => $timeZone);
+        
+        if ($currDate >= $appDate) {
+            # add the text to the reiminder queue along with the event's id:
+            my $idAndTextString = $id . "," . $text;
+            push @reminder_queue, $idAndTextString;
+        }
+    }
+
+    close CALFILE;
+
+    foreach my $reminder (@reminder_queue) {
+        # extract the id:
+        (my $idToSend, my $textToSend) = split /,/, $reminder, 2;
+
+        # quote the string so the ';'s don't disturb anything
+        $textToSend = "\'" . $textToSend . "\'";
+
+        my $command = "remind " . $calFilename . " " . $idToSend . " "
+            . $textToSend . " &";
+        if (system($command) != 0) {
+            MailError("Error calling remind program $!");
+        }
+    }
+
+    sleep $sleep_val;
+} # end of main loop
