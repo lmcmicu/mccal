@@ -58,7 +58,8 @@ def get_events(calendar_file, include_snoozes, year, month, day):
       for i in range(0,10):
         event[i] = int(event[i])
 
-      if event[5] == year and event[6] == month and event[7] == day:
+      if ((not snoozed and event[5] == year and event[6] == month and event[7] == day) or
+          (snoozed and event[0] == year and event[1] == month and event[2] == day)):
         if snoozed:
           event[10] = event[10] + ' (Snooze)'
         events.append(event)
