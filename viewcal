@@ -58,8 +58,18 @@ def get_events(calendar_file, include_snoozes, year, month, day):
       for i in range(0,10):
         event[i] = int(event[i])
 
-      if ((not snoozed and event[5] == year and event[6] == month and event[7] == day) or
-          (snoozed and event[0] == year and event[1] == month and event[2] == day)):
+      if snoozed:
+        event_year = event[0]
+        event_month = event[1]
+        event_day = event[2]
+      else:
+        event_year = event[5]
+        event_month = event[6]
+        event_day = event[7]
+
+      if (event_year == year and
+          (month is None or event_month == month) and
+          (day is None or event_day == day)):
         if snoozed:
           event[10] = event[10] + ' (Snooze)'
         events.append(event)
@@ -83,17 +93,23 @@ def format_events(events):
 def main(calendar_file, modifier, time_period, include_snoozes):
   if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
     year = int(m.groups()[0])
-    month = int(m.groups()[2])
-    day = int(m.groups()[4])
+    month = int(m.groups()[2]) if m.groups()[2] is not None else None
+    day = int(m.groups()[4]) if m.groups()[4] is not None else None
   elif re.fullmatch(r'today', time_period):
     today = date.today()
     year = today.year
     month = today.month
     day = today.day
   elif re.fullmatch(r'month', time_period):
-    print("month")
+    today = date.today()
+    year = today.year
+    month = today.month
+    day = None
   elif re.fullmatch(r'year', time_period):
-    print("year")
+    today = date.today()
+    year = today.year
+    month = None
+    day = None
   else:
     print("Miscellaneous")
 
