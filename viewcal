@@ -21,15 +21,16 @@ import argparse
 import re
 
 
-def get_events(calendar_file, year, month, day):
+def get_events(calendar_file, include_snoozes, year, month, day):
   with open(calendar_file) as f:
     events = []
     for line in f:
       line = line.rstrip('\n')
-      if line.startswith('SNOOZE'):
+      snoozed = line.startswith('SNOOZE')
+      if not include_snoozes and snoozed:
         continue
       # remove the initial id portion of the line:
-      event = re.sub("^ID:\S+ ", "", line)
+      event = re.sub("^(SNOOZE )?ID:\S+ ", "", line)
 
       # remove date and time separators ("/" and ":")
       event = re.sub(
@@ -57,6 +58,8 @@ def get_events(calendar_file, year, month, day):
         event[i] = int(event[i])
 
       if event[5] == year and event[6] == month and event[7] == day:
+        if snoozed:
+          event[10] = event[10] + ' (Snooze)'
         events.append(event)
 
     return events
@@ -75,12 +78,12 @@ def format_events(events):
   return formatted_events
 
 
-def main(calendar_file, modifier, time_period):
+def main(calendar_file, modifier, time_period, include_snoozes):
   if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
     year = int(m.groups()[0])
     month = int(m.groups()[2])
     day = int(m.groups()[4])
-    events = get_events(calendar_file, year, month, day)
+    events = get_events(calendar_file, include_snoozes, year, month, day)
     events = sort_events(events)
     print('\n'.join(format_events(events)))
   elif re.fullmatch(r'today', time_period):
@@ -94,11 +97,19 @@ def main(calendar_file, modifier, time_period):
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="TODO: Add description")
-  parser.add_argument('-f', '--calendar_file')
+  parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
+  parser.add_argument(
+    '-f', '--file', metavar='FILE',
+    help="Use the given calendar file instead of '~/.mycalendar.txt'"
+  )
+  parser.add_argument(
+    '-a', '--all',
+    help='Also show snoozed events that will trigger reminders during the given period',
+    action="store_true"
+  )
   parser.add_argument('MODIFIER', choices=['next', 'last'], nargs='?')
-  parser.add_argument('TIME_PERIOD', help="Can be one of: year, month, week, monday, \
+  parser.add_argument('PERIOD', help="Can be one of: year, month, week, monday, \
   tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
   yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
-  main(args.calendar_file, args.MODIFIER, args.TIME_PERIOD)
+  main(args.file, args.MODIFIER, args.PERIOD, args.all)
