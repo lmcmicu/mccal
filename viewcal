@@ -22,7 +22,7 @@ import re
 from datetime import date
 
 
-def get_events(calendar_file, include_snoozes, year, month, day):
+def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day):
   with open(calendar_file) as f:
     events = []
     for line in f:
@@ -58,25 +58,27 @@ def get_events(calendar_file, include_snoozes, year, month, day):
       for i in range(0,10):
         event[i] = int(event[i])
 
-      if snoozed:
-        event_year = event[0]
-        event_month = event[1]
-        event_day = event[2]
-        event_hour = event[3]
-        event_minute = event[4]
-      else:
-        event_year = event[5]
-        event_month = event[6]
-        event_day = event[7]
-        event_hour = event[8]
-        event_minute = event[9]
+      remind_event_year = event[0]
+      remind_event_month = event[1]
+      remind_event_day = event[2]
+      remind_event_hour = event[3]
+      remind_event_minute = event[4]
+      event_year = remind_event_year if snoozed else event[5]
+      event_month = remind_event_month if snoozed else event[6]
+      event_day = remind_event_day if snoozed else event[7]
+      event_hour = remind_event_hour if snoozed else event[8]
+      event_minute = remind_event_minute if snoozed else event[9]
 
       if (event_year == year and
           (month is None or event_month == month) and
           (day is None or event_day == day)):
-        if snoozed:
-          event[10] = event[10] + \
-            f' (Snooze until {event_year}-{event_month}-{event_day} {event_hour}:{event_minute})'
+        if snoozed or include_remind_time:
+          event[10] = (
+            event[10] +
+            f' ({"Snooze until" if snoozed else "Reminder at"}'
+            f' {remind_event_year:04}-{remind_event_month:02}-{remind_event_day:02}'
+            f' {remind_event_hour:02}:{remind_event_minute:02})'
+          )
         events.append(event)
 
     return events
@@ -92,7 +94,7 @@ def format_events(events):
   return formatted_events
 
 
-def main(calendar_file, modifier, time_period, include_snoozes):
+def main(calendar_file, modifier, time_period, include_snoozes, include_remind_time):
   if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
     year = int(m.groups()[0])
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
@@ -115,7 +117,7 @@ def main(calendar_file, modifier, time_period, include_snoozes):
   else:
     print("Miscellaneous")
 
-  events = get_events(calendar_file, include_snoozes, year, month, day)
+  events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day)
   events = sort_events(events)
   print('\n'.join(format_events(events)))
 
@@ -131,9 +133,14 @@ if __name__ == "__main__":
     help='Also show snoozed events that will trigger reminders during the given period',
     action="store_true"
   )
+  parser.add_argument(
+    '-r', '--include_remind_time',
+    help='Show the date and time at which the reminder for a given event will be triggered',
+    action="store_true"
+  )
   parser.add_argument('MODIFIER', choices=['next', 'last'], nargs='?')
   parser.add_argument('PERIOD', help="Can be one of: year, month, week, monday, \
   tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
   yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
-  main(args.file, args.MODIFIER, args.PERIOD, args.all)
+  main(args.file, args.MODIFIER, args.PERIOD, args.all, args.include_remind_time)
