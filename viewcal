@@ -62,16 +62,21 @@ def get_events(calendar_file, include_snoozes, year, month, day):
         event_year = event[0]
         event_month = event[1]
         event_day = event[2]
+        event_hour = event[3]
+        event_minute = event[4]
       else:
         event_year = event[5]
         event_month = event[6]
         event_day = event[7]
+        event_hour = event[8]
+        event_minute = event[9]
 
       if (event_year == year and
           (month is None or event_month == month) and
           (day is None or event_day == day)):
         if snoozed:
-          event[10] = event[10] + ' (Snooze)'
+          event[10] = event[10] + \
+            f' (Snooze until {event_year}-{event_month}-{event_day} {event_hour}:{event_minute})'
         events.append(event)
 
     return events
@@ -83,10 +88,7 @@ def sort_events(events):
 
 def format_events(events):
   # Add back the separators and quotes:
-  formatted_events = [
-    f'{x[0]}-{x[1]}-{x[2]} {x[3]}:{x[4]} "{x[5]}-{x[6]}-{x[7]} {x[8]}:{x[9]} {x[10]}"'
-    for x in events
-  ]
+  formatted_events = [f'{x[5]:04}-{x[6]:02}-{x[7]:02} {x[8]:02}:{x[9]:02} {x[10]}' for x in events]
   return formatted_events
 
 
