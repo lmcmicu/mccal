@@ -19,6 +19,7 @@
 
 import argparse
 import re
+from datetime import date
 
 
 def get_events(calendar_file, include_snoozes, year, month, day):
@@ -83,17 +84,21 @@ def main(calendar_file, modifier, time_period, include_snoozes):
     year = int(m.groups()[0])
     month = int(m.groups()[2])
     day = int(m.groups()[4])
-    events = get_events(calendar_file, include_snoozes, year, month, day)
-    events = sort_events(events)
-    print('\n'.join(format_events(events)))
   elif re.fullmatch(r'today', time_period):
-    print("today")
+    today = date.today()
+    year = today.year
+    month = today.month
+    day = today.day
   elif re.fullmatch(r'month', time_period):
     print("month")
   elif re.fullmatch(r'year', time_period):
     print("year")
   else:
     print("Miscellaneous")
+
+  events = get_events(calendar_file, include_snoozes, year, month, day)
+  events = sort_events(events)
+  print('\n'.join(format_events(events)))
 
 
 if __name__ == "__main__":
