@@ -22,7 +22,7 @@ import re
 import sys
 import time
 from datetime import date, timedelta
-
+from pathlib import Path
 
 def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta):
   with open(calendar_file) as f:
@@ -191,8 +191,9 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     sys.exit(1)
 
   events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta)
-  events = sort_events(events)
-  print('\n'.join(format_events(events)))
+  if events:
+    events = sort_events(events)
+    print('\n'.join(format_events(events)))
 
 
 if __name__ == "__main__":
@@ -217,7 +218,7 @@ if __name__ == "__main__":
   yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
   main(
-    args.file,
+    args.file or f"{str(Path.home())}/.mycalendar.txt",
     args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
     args.PERIOD.lower(),
     args.all,
