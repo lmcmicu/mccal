@@ -19,7 +19,7 @@
 
 import argparse
 import re
-from datetime import date
+from datetime import date, timedelta
 
 
 def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day):
@@ -115,7 +115,17 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     month = None
     day = None
   else:
-    print("Miscellaneous")
+    dates = []
+    if re.fullmatch(r'tomorrow', time_period):
+      tomorrow = date.today() + timedelta(days=1)
+      year = tomorrow.year
+      month = tomorrow.month
+      day = tomorrow.day
+    if re.fullmatch(r'yesterday', time_period):
+      yesterday = date.today() + timedelta(days=-1)
+      year = yesterday.year
+      month = yesterday.month
+      day = yesterday.day
 
   events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day)
   events = sort_events(events)
@@ -134,7 +144,7 @@ if __name__ == "__main__":
     action="store_true"
   )
   parser.add_argument(
-    '-r', '--include_remind_time',
+    '-r', '--reminders',
     help='Show the date and time at which the reminder for a given event will be triggered',
     action="store_true"
   )
@@ -143,4 +153,4 @@ if __name__ == "__main__":
   tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
   yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
-  main(args.file, args.MODIFIER, args.PERIOD, args.all, args.include_remind_time)
+  main(args.file, args.MODIFIER, args.PERIOD, args.all, args.reminders)
