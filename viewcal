@@ -140,23 +140,51 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     month = yesterday.month
     day = yesterday.day
     delta = None
-  elif m := re.fullmatch(r'(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
-                         time_period):
-    date_range = m.groups()[0]
-    if date_range == "week":
-      today = date.fromtimestamp(time.time())
-      start = today - timedelta(days=today.weekday())
-      if modifier == "next":
-        start += timedelta(weeks=1)
-      elif modifier == "last":
-        start -= timedelta(weeks=1)
-      year = start.year
-      month = start.month
-      day = start.day
-      delta = timedelta(days=6)
+  elif re.fullmatch(r'week', time_period):
+    today = date.fromtimestamp(time.time())
+    start = today - timedelta(days=today.weekday())
+    if modifier == "next":
+      start += timedelta(weeks=1)
+    elif modifier == "last":
+      start -= timedelta(weeks=1)
+    year = start.year
+    month = start.month
+    day = start.day
+    delta = timedelta(days=6)
+  elif m := re.fullmatch(
+      r'(monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
+      time_period
+  ):
+    dow = m.groups()[0]
+    today = date.fromtimestamp(time.time())
+    monday = today - timedelta(days=today.weekday())
+    if dow == "monday":
+      start = monday
+    elif dow == "tuesday":
+      start = monday + timedelta(days=1)
+    elif dow == "wednesday":
+      start = monday + timedelta(days=2)
+    elif dow == "thursday":
+      start = monday + timedelta(days=3)
+    elif dow == "friday":
+      start = monday + timedelta(days=4)
+    elif dow == "saturday":
+      start = monday + timedelta(days=5)
+    elif dow == "sunday":
+      start = monday + timedelta(days=6)
     else:
-      print(f"{date_range}? Sure, I'll work on it.")
+      print(f"{dow}? Sure, I'll work on it.")
       sys.exit(1)
+
+    if modifier == "next":
+      start += timedelta(weeks=1)
+    elif modifier == "last":
+      start -= timedelta(weeks=1)
+
+    year = start.year
+    month = start.month
+    day = start.day
+    delta = None
   else:
     print(f"Illegal time period: {time_period}")
     sys.exit(1)

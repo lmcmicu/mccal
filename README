@@ -1,7 +1,4 @@
-TODO: Rewrite this README.
-
-mccal: simple reminder calendar
-===============================
+# mccal: simple reminder calendar
 
 mccal is not a "visual" calendar by any stretch of the imagination. This
 simple little program is mainly useful for giving you reminders, which
@@ -22,6 +19,7 @@ requires:
 ---------
 
 - Perl, Perl::DateTime, Perl::Time::HiRes, Net::OpenSSH, bash, (gxmessage|zenity|cocoadialog)
+- Python 3.x
 
 to install:
 -----------
@@ -63,7 +61,7 @@ coming due (in addition to the popup gxmessage).
 - displays appointments
 
 Usage:
-viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]
+viewcal [-h] [-f FILE] [-a] [-r] [{this,next,last}] PERIOD
 
 3) run_findapps.sh
 
