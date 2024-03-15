@@ -1,257 +1,225 @@
-#!/usr/bin/perl
+#!/usr/bin/env python3
 
-# Copyright 2014-2016 Michael Cuffaro
-# 
+# Copyright 2014-2024 Michael Cuffaro
+#
 # This file is part of mccal.
-# 
+#
 # mccal is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # mccal is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
-
-use strict;
-use DateTime;
-
-
-my $calFilename = "$ENV{HOME}/.mycalendar.txt";
-chomp (my $timeZone = `cat /etc/timezone`);
+import argparse
+import re
+import sys
+import time
+from datetime import date, timedelta
 
 
-sub SortEntries {
-    # the only side effect of this routine is it will collapse whitespace
-    my (@input) = @_;
-    my @output;
+def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta):
+  with open(calendar_file) as f:
+    events = []
+    for line in f:
+      line = line.rstrip('\n')
+      snoozed = line.startswith('SNOOZE')
+      if not include_snoozes and snoozed:
+        continue
 
-    while (chomp (my $line = shift @input)) {        
-        # remove the initial id portion of the line:
-        $line =~ s/^ID:\S+ //;
+      # Remove the initial portion of the line:
+      event = re.sub(r"^(SNOOZE )?ID:\S+ ", "", line)
 
-        # remove date and time separators ("/" and ":")
-        $line =~
-            s/([0-9]{1,4})-
-              ([0-9]{1,2})-
-              ([0-9]{1,2})\s+
-              ([0-9]{1,2}):
-              ([0-9]{1,2})\s+
-              (.*)
-             /$1 $2 $3 $4 $5 $6/x;
+      # Remove date and time separators ("/" and ":"):
+      event = re.sub(
+        r"""
+        ([0-9]{1,4})-
+        ([0-9]{1,2})-
+        ([0-9]{1,2})\s+
+        ([0-9]{1,2}):
+        ([0-9]{1,2})\s+
+        "
+        ([0-9]{1,4})-
+        ([0-9]{1,2})-
+        ([0-9]{1,2})\s+
+        ([0-9]{1,2}):
+        ([0-9]{1,2})\s+
+        (.*?)
+        "
+        """,
+        r'\g<1> \g<2> \g<3> \g<4> \g<5> \g<6> \g<7> \g<8> \g<9> \g<10> \g<11>',
+        event,
+        flags=re.X
+      )
 
-        push @output, $line;
-    }
+      # Parse the reminder and event date and time fields:
+      event = event.split(' ', maxsplit=10)
+      for i in range(0, 10):
+        event[i] = int(event[i])
 
-    # sort the entries here:
-    @output =
-        map { $_->[0] }
-        sort {
-            my @a_fields = @$a[1..$#$a];
-            my @b_fields = @$b[1..$#$b];
+      # Assign them appropriately:
+      remind_event_year = event[0]
+      remind_event_month = event[1]
+      remind_event_day = event[2]
+      remind_event_hour = event[3]
+      remind_event_minute = event[4]
+      event_year = remind_event_year if snoozed else event[5]
+      event_month = remind_event_month if snoozed else event[6]
+      event_day = remind_event_day if snoozed else event[7]
+      event_hour = remind_event_hour if snoozed else event[8]
+      event_minute = remind_event_minute if snoozed else event[9]
 
-            $a_fields[0] <=> $b_fields[0] ||
-            $a_fields[1] <=> $b_fields[1] ||
-            $a_fields[2] <=> $b_fields[2] ||
-            $a_fields[3] <=> $b_fields[3] ||
-            $a_fields[4] <=> $b_fields[4]
-        }
-        map { [$_, split] } @output;
+      # Construct the dates for the range comparison:
+      event_date = date(year=event_year, month=event_month, day=event_day)
+      start = date(year=year, month=month or 1, day=day or 1)
+      end = start if delta is None else start + delta
 
-    # put the separators back in:
-    foreach my $outputline (@output) {
-        $outputline =~
-            s/([0-9]{1,4})\s
-              ([0-9]{1,2})\s
-              ([0-9]{1,2})\s
-              ([0-9]{1,2})\s
-              ([0-9]{1,2})\s
-              (.*)
-             /$1-$2-$3 $4:$5 $6/x;
-    }
-    return @output;
-}
+      # Determine whether the event matches the criteria represented by the input to the function:
+      if (start <= event_date) and (event_date <= end):
+        if snoozed or include_remind_time:
+          event[10] = (
+            event[10] +
+            f' ({"Snooze until" if snoozed else "Reminder at"}'
+            f' {remind_event_year:04}-{remind_event_month:02}-{remind_event_day:02}'
+            f' {remind_event_hour:02}:{remind_event_minute:02})'
+          )
+        events.append(event)
+
+    return events
 
 
-sub PrintEntries {
-    my (@entries) = @_;
+def sort_events(events):
+  # Sort the entries:
+  return sorted(events, key=lambda x: (x[5], x[6], x[7], x[8], x[9]))
 
-    foreach my $entry (@entries) {
-        print "$entry\n";
-    }
-}
 
-################## MAIN CODE STARTS HERE ##################
+def format_events(events):
+  # Add back the separators and quotes:
+  formatted_events = [f'{x[5]:04}-{x[6]:02}-{x[7]:02} {x[8]:02}:{x[9]:02} {x[10]}' for x in events]
+  return formatted_events
 
-my $dateToCheck;
-my $dateArgvPos;
-if ($ARGV[0] =~ /^-f/) {
-    $calFilename = $ARGV[1];
-    $dateArgvPos = 2;
-}
-else {
-    $dateArgvPos = 0;
-}
 
-if (!defined $ARGV[$dateArgvPos]) {
-    $dateToCheck = "today";
-}
-elsif ($ARGV[$dateArgvPos] =~ /^(-){1,2}h(elp){0,1}$/) {
-    chomp(my $prog = `basename $0`);
-    print "Usage:\n$prog [-f <calendar file>] [([next|last](<year>|<month>|<week>|monday|tuesday|wednesday|thursday|friday|saturday|sunday))|<today>|<tomorrow>|" .
-        "<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]\n";
-    exit 1;
-}
-else {
-    $dateToCheck = join(' ', @ARGV[$dateArgvPos..scalar(@ARGV)]);
-    $dateToCheck =~ s/^\s+|\s+$//g;
-}
+def main(calendar_file, modifier, time_period, include_snoozes, include_remind_time):
+  if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
+    year = int(m.groups()[0])
+    month = int(m.groups()[2]) if m.groups()[2] is not None else None
+    day = int(m.groups()[4]) if m.groups()[4] is not None else None
+    delta = None
+  elif re.fullmatch(r'today', time_period):
+    today = date.today()
+    year = today.year
+    month = today.month
+    day = today.day
+    delta = None
+  elif re.fullmatch(r'month', time_period):
+    today = date.today()
+    year = today.year
+    month = today.month
+    day = None
+    delta = None
+  elif re.fullmatch(r'year', time_period):
+    today = date.today()
+    year = today.year
+    month = None
+    day = None
+    delta = None
+  elif re.fullmatch(r'tomorrow', time_period):
+    tomorrow = date.today() + timedelta(days=1)
+    year = tomorrow.year
+    month = tomorrow.month
+    day = tomorrow.day
+    delta = None
+  elif re.fullmatch(r'yesterday', time_period):
+    yesterday = date.today() + timedelta(days=-1)
+    year = yesterday.year
+    month = yesterday.month
+    day = yesterday.day
+    delta = None
+  elif re.fullmatch(r'week', time_period):
+    today = date.fromtimestamp(time.time())
+    start = today - timedelta(days=today.weekday())
+    if modifier == "next":
+      start += timedelta(weeks=1)
+    elif modifier == "last":
+      start -= timedelta(weeks=1)
+    year = start.year
+    month = start.month
+    day = start.day
+    delta = timedelta(days=6)
+  elif m := re.fullmatch(
+      r'(monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
+      time_period
+  ):
+    dow = m.groups()[0]
+    today = date.fromtimestamp(time.time())
+    monday = today - timedelta(days=today.weekday())
+    if dow == "monday":
+      start = monday
+    elif dow == "tuesday":
+      start = monday + timedelta(days=1)
+    elif dow == "wednesday":
+      start = monday + timedelta(days=2)
+    elif dow == "thursday":
+      start = monday + timedelta(days=3)
+    elif dow == "friday":
+      start = monday + timedelta(days=4)
+    elif dow == "saturday":
+      start = monday + timedelta(days=5)
+    elif dow == "sunday":
+      start = monday + timedelta(days=6)
+    else:
+      print(f"{dow}? Sure, I'll work on it.")
+      sys.exit(1)
 
-if ($dateToCheck =~ /^\d{1,4}(-\d{1,2}){0,2}$/) {
-    my ($year, $month, $day, $rest, $grepString);
-    ($year, $rest) = split /-/, $dateToCheck, 2;
-    $year =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
-    $grepString = "\"$year";
+    if modifier == "next":
+      start += timedelta(weeks=1)
+    elif modifier == "last":
+      start -= timedelta(weeks=1)
 
-    ($month, $rest) = split /-/, $rest, 2;
-    if (defined($month)) {
-        $month =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
-        $grepString .= "-0*$month";
-    }
+    year = start.year
+    month = start.month
+    day = start.day
+    delta = None
+  else:
+    print(f"Illegal time period: {time_period}")
+    sys.exit(1)
 
-    ($day, $rest) = split /-/, $rest, 2;
-    if (defined($day)) {
-        $day =~ s/^\s*0*([1-9]+)/$1/; # strip leading zeros
-        $grepString .= "-0*$day";
-    }
+  events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta)
+  events = sort_events(events)
+  print('\n'.join(format_events(events)))
 
-    $grepString .= "\"";
-    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
-    PrintEntries SortEntries @lines;
-}
-elsif ($dateToCheck =~ /^today$/) {
-    my $todaysDate = `date +"%Y-%m-%d"`;
-    chomp $todaysDate;
-    my ($year, $month, $day) = split /-/, $todaysDate, 3;
-    # strip leading zeros:
-    $year =~ s/^\s*0*([1-9]+)/$1/;
-    $month =~ s/^\s*0*([1-9]+)/$1/;
-    $day =~ s/^\s*0*([1-9]+)/$1/;
 
-    my $grepString = "\"$year-0*$month-0*$day\"";
-    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
-    PrintEntries SortEntries @lines;
-}
-elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}month\s*$/) {
-    my $addendum = 0;
-    if ($dateToCheck =~ /^last(\s+)month$/) {
-        $addendum = -1;
-    }
-    elsif ($dateToCheck =~ /^next(\s+)month$/) {
-        $addendum = 1;
-    }
-
-    my $monthStr = 'date +"%Y-%m"';
-    if ($addendum != 0) {
-        $monthStr .= ' --date="' . $addendum . ' month"';
-    }
-
-    my $thisMonth = `$monthStr`;
-    chomp $thisMonth;
-    my ($year, $month) = split /-/, $thisMonth, 2;
-    # strip leading zeros:
-    $year =~ s/^\s*0*([1-9]+)/$1/;
-    $month =~ s/^\s*0*([1-9]+)/$1/;
-
-    my $grepString = "\"$year-0*$month\"";
-    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
-    PrintEntries SortEntries @lines;
-}
-elsif ($dateToCheck =~ /^((last|next)(\s+)){0,1}year\s*$/) {
-    my $addendum = 0;
-    if ($dateToCheck =~ /^last(\s+)year$/) {
-        $addendum = -1;
-    }
-    elsif ($dateToCheck =~ /^next(\s+)year$/) {
-        $addendum = 1;
-    }
-
-    my $yearStr = 'date +"%Y"';
-    if ($addendum != 0) {
-        $yearStr .= ' --date="' . $addendum . ' year"';
-    }
-
-    my $thisYear = `$yearStr`;
-    chomp $thisYear;
-    # strip leading zeros:
-    $thisYear =~ s/^\s*0*([1-9]+)/$1/;
-
-    my $grepString = "\"$thisYear\"";
-    my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
-    PrintEntries SortEntries @lines;
-}
-else {
-    my @dates;
-    if ($dateToCheck =~ /^tomorrow$/) {
-        my $date = DateTime->now;
-        $date->set_time_zone($timeZone);
-        $date->add(days=>1);
-        push @dates, $date;
-    }
-    elsif ($dateToCheck =~ /^yesterday$/) {
-        my $date = DateTime->now;
-        $date->set_time_zone($timeZone);
-        $date->add(days=>-1);
-        push @dates, $date;
-    }
-    elsif ($dateToCheck =~ /^((last|next)\s*){0,1}(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/) {
-        my $range = $3;
-        my $date = DateTime->now;
-        $date->set_time_zone($timeZone);
-
-        if ($range eq "week") {
-            $date->add(days => -($date->day_of_week - 1));
-        }
-
-        my $addendum = 0;
-        if ($dateToCheck =~ /^last/) {
-            $addendum = -1;
-        }
-        elsif ($dateToCheck =~ /^next/) {
-            $addendum = 1;
-        }
-        $date->add(days => $addendum * 7);
-
-        my $firstdate = $date->clone;
-        if ($range eq "week" || lc($firstdate->day_name) eq $range) {
-            push @dates, $firstdate;
-        }
-        
-        for (my $i = 0; $i < 6; $i++) {
-            $date->add(days=>1);
-            my $tmpdate = $date->clone;
-            if ($range eq "week" || lc($tmpdate->day_name) eq $range) {
-                push @dates, $tmpdate;
-            }
-        }
-    }
-    else {
-        print STDERR "Invalid date: " . $dateToCheck . "\n";
-        exit 1;
-    }
-
-    foreach my $nextDate (@dates) {
-        my $year = $nextDate->year;
-        my $month = $nextDate->month;
-        my $day = $nextDate->day;
-
-        my $grepString = "\"$year-0*$month-0*$day\"";
-        my @lines = `grep -w $grepString $calFilename |grep -v SNOOZE`;
-        PrintEntries SortEntries @lines;
-    }
-}
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
+  parser.add_argument(
+    '-f', '--file', metavar='FILE',
+    help="Use the given calendar file instead of '~/.mycalendar.txt'"
+  )
+  parser.add_argument(
+    '-a', '--all',
+    help='Also show snoozed events that will trigger reminders during the given period',
+    action="store_true"
+  )
+  parser.add_argument(
+    '-r', '--reminders',
+    help='Show the date and time at which the reminder for a given event will be triggered',
+    action="store_true"
+  )
+  parser.add_argument('MODIFIER', choices=['this', 'next', 'last'], nargs='?')
+  parser.add_argument('PERIOD', help="Can be one of: year, month, week, monday, \
+  tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
+  yyyy-mm-dd, yyyy-mm, yyyy")
+  args = parser.parse_args()
+  main(
+    args.file,
+    args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
+    args.PERIOD.lower(),
+    args.all,
+    args.reminders
+  )
