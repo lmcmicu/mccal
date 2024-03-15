@@ -19,10 +19,12 @@
 
 import argparse
 import re
-from datetime import date, timedelta
+import sys
+import time
+from datetime import date, datetime, timedelta
 
 
-def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day):
+def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta):
   with open(calendar_file) as f:
     events = []
     for line in f:
@@ -30,10 +32,11 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
       snoozed = line.startswith('SNOOZE')
       if not include_snoozes and snoozed:
         continue
-      # remove the initial id portion of the line:
+
+      # Remove the initial portion of the line:
       event = re.sub("^(SNOOZE )?ID:\S+ ", "", line)
 
-      # remove date and time separators ("/" and ":")
+      # Remove date and time separators ("/" and ":"):
       event = re.sub(
         r"""
         ([0-9]{1,4})-
@@ -54,10 +57,13 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
         event,
         flags=re.X
       );
+
+      # Parse the reminder and event date and time fields:
       event = event.split(' ', maxsplit=10)
       for i in range(0,10):
         event[i] = int(event[i])
 
+      # Assign them appropriately:
       remind_event_year = event[0]
       remind_event_month = event[1]
       remind_event_day = event[2]
@@ -69,9 +75,13 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
       event_hour = remind_event_hour if snoozed else event[8]
       event_minute = remind_event_minute if snoozed else event[9]
 
-      if (event_year == year and
-          (month is None or event_month == month) and
-          (day is None or event_day == day)):
+      # Construct the dates for the range comparison:
+      event_date = date(year=event_year, month=event_month, day=event_day)
+      start = date(year=year, month=month or 1, day=day or 1)
+      end = start if delta is None else start + delta
+
+      # Determine whether the event matches the criteria represented by the input to the function:
+      if (start <= event_date) and (event_date <= end):
         if snoozed or include_remind_time:
           event[10] = (
             event[10] +
@@ -99,35 +109,59 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     year = int(m.groups()[0])
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
     day = int(m.groups()[4]) if m.groups()[4] is not None else None
+    delta = None
   elif re.fullmatch(r'today', time_period):
     today = date.today()
     year = today.year
     month = today.month
     day = today.day
+    delta = None
   elif re.fullmatch(r'month', time_period):
     today = date.today()
     year = today.year
     month = today.month
     day = None
+    delta = None
   elif re.fullmatch(r'year', time_period):
     today = date.today()
     year = today.year
     month = None
     day = None
+    delta = None
+  elif re.fullmatch(r'tomorrow', time_period):
+    tomorrow = date.today() + timedelta(days=1)
+    year = tomorrow.year
+    month = tomorrow.month
+    day = tomorrow.day
+    delta = None
+  elif re.fullmatch(r'yesterday', time_period):
+    yesterday = date.today() + timedelta(days=-1)
+    year = yesterday.year
+    month = yesterday.month
+    day = yesterday.day
+    delta = None
+  elif m := re.fullmatch(r'(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
+                         time_period):
+    date_range = m.groups()[0]
+    if date_range == "week":
+      today = date.fromtimestamp(time.time())
+      start = today - timedelta(days=today.weekday())
+      if modifier == "next":
+        start += timedelta(weeks=1)
+      elif modifier == "last":
+        start -= timedelta(weeks=1)
+      year = start.year
+      month = start.month
+      day = start.day
+      delta = timedelta(days=6)
+    else:
+      print(f"{date_range}? Sure, I'll work on it.")
+      sys.exit(1)
   else:
-    dates = []
-    if re.fullmatch(r'tomorrow', time_period):
-      tomorrow = date.today() + timedelta(days=1)
-      year = tomorrow.year
-      month = tomorrow.month
-      day = tomorrow.day
-    if re.fullmatch(r'yesterday', time_period):
-      yesterday = date.today() + timedelta(days=-1)
-      year = yesterday.year
-      month = yesterday.month
-      day = yesterday.day
+    print(f"Illegal time period: {time_period}")
+    sys.exit(1)
 
-  events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day)
+  events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta)
   events = sort_events(events)
   print('\n'.join(format_events(events)))
 
@@ -148,9 +182,15 @@ if __name__ == "__main__":
     help='Show the date and time at which the reminder for a given event will be triggered',
     action="store_true"
   )
-  parser.add_argument('MODIFIER', choices=['next', 'last'], nargs='?')
+  parser.add_argument('MODIFIER', choices=['this', 'next', 'last'], nargs='?')
   parser.add_argument('PERIOD', help="Can be one of: year, month, week, monday, \
   tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
   yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
-  main(args.file, args.MODIFIER, args.PERIOD, args.all, args.reminders)
+  main(
+    args.file,
+    args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
+    args.PERIOD.lower(),
+    args.all,
+    args.reminders
+  )
