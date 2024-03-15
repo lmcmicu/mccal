@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright 2014-2016 Michael Cuffaro
+# Copyright 2014-2024 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
