@@ -1,7 +1,5 @@
 # *mccal*: a simple reminder calendar
 
-The latest stable release of *mccal* is [v0.1.0](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0).
-
 *mccal* is mainly useful for giving you reminders, which
 you can snooze (as often as you like) for however many minutes, hours, or
 days that you would like. None of the (at the time I wrote this) available
@@ -24,7 +22,9 @@ process of porting it to python.
 
 ## Installation
 
-- copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
+- Download the source code for the [latest stable
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) of *mccal* and
+  copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
   `run_findapps.sh`, and `viewcal` to a directory in your executable path
   (e.g., `~/bin/`).
 
