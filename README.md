@@ -1,6 +1,6 @@
 # *mccal*: a simple reminder calendar
 
-The latest stable release of *mccal* is [v0.1.0](https://github.com/lmcmicu/mccal/tree/v0.1.0).
+The latest stable release of *mccal* is [v0.1.0](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0).
 
 *mccal* is mainly useful for giving you reminders, which
 you can snooze (as often as you like) for however many minutes, hours, or
