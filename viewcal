@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2014-2024 Michael Cuffaro
+# Copyright 2006-2024 Michael Cuffaro
 #
 # This file is part of mccal.
 #
@@ -113,6 +113,12 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     delta = None
   elif re.fullmatch(r'today', time_period):
     today = date.today()
+    if modifier == "next":
+      # The "next today" is tomorrow ;-)
+      today = today + timedelta(days=1)
+    elif modifier == "last":
+      # The "last today" is yesterday ;-)
+      today = today - timedelta(days=1)
     year = today.year
     month = today.month
     day = today.day
@@ -121,22 +127,42 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     today = date.today()
     year = today.year
     month = today.month
+    if modifier == "next":
+      month += 1
+    elif modifier == "last":
+      month -=1
     day = None
     delta = None
   elif re.fullmatch(r'year', time_period):
     today = date.today()
     year = today.year
+    if modifier == "next":
+      year += 1
+    elif modifier == "last":
+      year -= 1
     month = None
     day = None
     delta = None
   elif re.fullmatch(r'tomorrow', time_period):
     tomorrow = date.today() + timedelta(days=1)
+    if modifier == "next":
+      # The "next tomorrow" is two days from now ;-)
+      tomorrow = tomorrow + timedelta(days=1)
+    elif modifier == "last":
+      # The "last tomorrow" is today ;-)
+      tomorrow = tomorrow - timedelta(days=1)
     year = tomorrow.year
     month = tomorrow.month
     day = tomorrow.day
     delta = None
   elif re.fullmatch(r'yesterday', time_period):
     yesterday = date.today() + timedelta(days=-1)
+    if modifier == "next":
+      # The "next yesterday" is today ;-)
+      yesterday = yesterday + timedelta(days=1)
+    elif modifier == "last":
+      # The "last yesterday" was two days ago ;-)
+      yesterday = yesterday - timedelta(days=1)
     year = yesterday.year
     month = yesterday.month
     day = yesterday.day
