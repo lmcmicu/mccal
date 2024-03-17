@@ -1,20 +1,21 @@
 # *mccal*: a simple reminder calendar
 
 *mccal* is mainly useful for giving you reminders, which
-you can snooze (as often as you like) for however many minutes, hours, or
-days that you would like. None of the (at the time I wrote this) available
-calendars for Linux/UNIX had this kind of snoozing functionality. This
-is the main reason I wrote *mccal*.
+you can snooze, as often as you like, for however many minutes, hours, or
+days that you would like. When I originally wrote *mccal* in the early 2000s,
+none of the available calendars for Linux/UNIX had this kind of snoozing
+functionality. This is the main reason I wrote *mccal*.
 
 When an appointment becomes due, the program will pop up a window with the
 appointment text, which you can then dismiss or snooze as desired. The
 program also allows you to optionally indicate a set of commands it should
 run at that time (e.g., emailing someone, ringing a bell, etc.). *mccal* uses
 an external program to implement the window popup. Currently the options are
-zenity, gxmessage, and cocoadialog (Mac OS).
+[zenity](https://help.gnome.org/users/zenity/stable/),
+[gxmessage](https://directory.fsf.org/wiki/Gxmessage), and
+[cocoadialog](https://github.com/cocoadialog/) (MacOS).
 
-I originally coded *mccal* in Perl in the early 2000s. I am currently in the
-process of porting it to python.
+I am currently in the process of re-coding *mccal* to python.
 
 ## Requirements
 
