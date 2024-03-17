@@ -244,7 +244,7 @@ if __name__ == "__main__":
     PERIOD, or the last PERIOD, respectively.")
   parser.add_argument('PERIOD', help="If left unspecified, defaults to 'today'. Can be one of: \
   year, month, week, monday, tuesday, wednesday, thursday, friday, saturday, sunday, today, \
-  tomorrow, yesterday yyyy-mm-dd, yyyy-mm, yyyy")
+  tomorrow, yesterday, yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
   main(
     args.file or default_cal,
