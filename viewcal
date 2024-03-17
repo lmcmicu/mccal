@@ -23,6 +23,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+
 def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta):
   with open(calendar_file) as f:
     events = []
