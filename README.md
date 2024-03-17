@@ -15,7 +15,7 @@ an external program to implement the window popup. Currently the options are
 [gxmessage](https://directory.fsf.org/wiki/Gxmessage), and
 [cocoadialog](https://github.com/cocoadialog/) (MacOS).
 
-I am currently in the process of re-coding *mccal* to python.
+I am currently in the process of re-coding *mccal* in python.
 
 ## Requirements
 
