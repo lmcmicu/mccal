@@ -1,54 +1,45 @@
 2024-01-01 08:00 Event
----TC01 Passed---
+---TC01 Completed---
 2024-12-31 08:00 Event
----TC02 Passed---
+---TC02 Completed---
 2024-12-31 08:00 Event
----TC03 Passed---
----TC04 Passed---
+---TC03 Completed---
+---TC04 Completed---
 2023-12-31 08:00 Event
----TC05 Passed---
+---TC05 Completed---
 2024-01-02 08:00 Event
----TC06 Passed---
+---TC06 Completed---
 2024-01-01 08:00 Event
----TC07 Passed---
+---TC07 Completed---
 2024-01-01 08:00 Event
----TC08 Passed---
+---TC08 Completed---
 2023-12-31 08:00 Event
----TC09 Passed---
+---TC09 Completed---
 2024-01-02 08:00 Event
----TC10 Passed---
+---TC10 Completed---
 2024-01-02 08:00 Event
----TC11 Passed---
+---TC11 Completed---
 2024-01-02 08:00 Event
----TC12 Passed---
+---TC12 Completed---
 2024-01-01 08:00 Event
----TC13 Passed---
+---TC13 Completed---
 2024-01-03 08:00 Event
----TC14 Passed---
+---TC14 Completed---
 2024-01-28 08:00 Event
----TC15 Passed---
+---TC15 Completed---
 2024-01-28 08:00 Event
----TC16 Passed---
+---TC16 Completed---
 2024-01-29 08:00 Event
 2024-01-31 08:00 Event
 2024-01-31 08:00 Event
 2024-02-01 08:00 Event
 2024-02-02 08:00 Event
 2024-02-03 08:00 Event
----TC17 Passed---
+---TC17 Completed---
 2024-01-01 08:00 Event
 2024-01-02 08:00 Event
 2024-01-03 08:00 Event
----TC18 Passed---
-2024-01-01 08:00 Event
-2024-01-02 08:00 Event
-2024-01-03 08:00 Event
-2024-01-10 08:00 Event
-2024-01-28 08:00 Event
-2024-01-29 08:00 Event
-2024-01-31 08:00 Event
-2024-01-31 08:00 Event
----TC19 Passed---
+---TC18 Completed---
 2024-01-01 08:00 Event
 2024-01-02 08:00 Event
 2024-01-03 08:00 Event
@@ -57,17 +48,7 @@
 2024-01-29 08:00 Event
 2024-01-31 08:00 Event
 2024-01-31 08:00 Event
----TC20 Passed---
-2024-02-01 08:00 Event
-2024-02-02 08:00 Event
-2024-02-03 08:00 Event
-2024-02-26 08:00 Event
-2024-02-27 08:00 Event
-2024-02-28 08:00 Event
-2024-02-29 08:00 Event
----TC21 Passed---
-2023-12-31 08:00 Event
----TC22 Passed---
+---TC19 Completed---
 2024-01-01 08:00 Event
 2024-01-02 08:00 Event
 2024-01-03 08:00 Event
@@ -76,6 +57,7 @@
 2024-01-29 08:00 Event
 2024-01-31 08:00 Event
 2024-01-31 08:00 Event
+---TC20 Completed---
 2024-02-01 08:00 Event
 2024-02-02 08:00 Event
 2024-02-03 08:00 Event
@@ -83,19 +65,9 @@
 2024-02-27 08:00 Event
 2024-02-28 08:00 Event
 2024-02-29 08:00 Event
-2024-03-01 08:00 Event
-2024-03-02 08:00 Event
-2024-03-03 08:00 Event
-2024-03-07 08:00 Event
-2024-03-12 08:00 Event
-2024-03-19 08:00 Event
-2024-03-23 08:00 Event
-2024-03-30 08:00 Event
-2024-04-05 08:00 Event
-2024-04-12 08:00 Event
-2024-10-02 08:00 Event
-2024-12-31 08:00 Event
----TC23 Passed---
+---TC21 Completed---
+2023-12-31 08:00 Event
+---TC22 Completed---
 2024-01-01 08:00 Event
 2024-01-02 08:00 Event
 2024-01-03 08:00 Event
@@ -123,17 +95,45 @@
 2024-04-12 08:00 Event
 2024-10-02 08:00 Event
 2024-12-31 08:00 Event
----TC24 Passed---
+---TC23 Completed---
+2024-01-01 08:00 Event
+2024-01-02 08:00 Event
+2024-01-03 08:00 Event
+2024-01-10 08:00 Event
+2024-01-28 08:00 Event
+2024-01-29 08:00 Event
+2024-01-31 08:00 Event
+2024-01-31 08:00 Event
+2024-02-01 08:00 Event
+2024-02-02 08:00 Event
+2024-02-03 08:00 Event
+2024-02-26 08:00 Event
+2024-02-27 08:00 Event
+2024-02-28 08:00 Event
+2024-02-29 08:00 Event
+2024-03-01 08:00 Event
+2024-03-02 08:00 Event
+2024-03-03 08:00 Event
+2024-03-07 08:00 Event
+2024-03-12 08:00 Event
+2024-03-19 08:00 Event
+2024-03-23 08:00 Event
+2024-03-30 08:00 Event
+2024-04-05 08:00 Event
+2024-04-12 08:00 Event
+2024-10-02 08:00 Event
+2024-12-31 08:00 Event
+---TC24 Completed---
 2025-01-01 08:00 Event
----TC25 Passed---
+---TC25 Completed---
 2023-12-31 08:00 Event
----TC26 Passed---
+---TC26 Completed---
 2024-04-12 08:00 Event (Snooze until 2024-06-01 08:00)
----TC27 Passed---
+---TC27 Completed---
 2024-04-12 08:00 Event (Snooze until 2024-06-01 08:00)
 2024-04-12 08:00 Event (Snooze until 2024-06-12 08:00)
 2024-04-12 08:00 Event (Snooze until 2024-06-30 08:00)
----TC28 Passed---
+---TC28 Completed---
 2024-01-01 08:00 Event
 2024-01-02 08:00 Event
 2024-01-03 08:00 Event
@@ -165,10 +165,10 @@
 2024-04-12 08:00 Event (Snooze until 2024-12-31 08:00)
 2024-10-02 08:00 Event
 2024-12-31 08:00 Event
----TC29 Passed---
+---TC29 Completed---
 2024-04-12 08:00 Event (Snooze until 2025-01-01 08:00)
 2025-01-01 08:00 Event
----TC30 Passed---
+---TC30 Completed---
 2024-01-01 08:00 Event (Reminder at 2024-01-01 08:00)
 2024-01-02 08:00 Event (Reminder at 2024-01-02 08:00)
 2024-01-03 08:00 Event (Reminder at 2024-01-03 08:00)
@@ -200,16 +200,16 @@
 2024-04-12 08:00 Event (Snooze until 2024-12-31 08:00)
 2024-10-02 08:00 Event (Reminder at 2024-10-02 08:00)
 2024-12-31 08:00 Event (Reminder at 2024-12-31 08:00)
----TC31 Passed---
----TC32 Passed---
----TC33 Passed---
----TC34 Passed---
+---TC31 Completed---
+---TC32 Completed---
+---TC33 Completed---
+---TC34 Completed---
 2024-03-07 08:00 Event
----TC35 Passed---
----TC36 Passed---
----TC37 Passed---
----TC38 Passed---
+---TC35 Completed---
+---TC36 Completed---
+---TC37 Completed---
+---TC38 Completed---
 2024-03-12 08:00 Event
----TC39 Passed---
+---TC39 Completed---
 2024-02-29 08:00 Event
----TC40 Passed---
+---TC40 Completed---
