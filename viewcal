@@ -111,7 +111,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
     day = int(m.groups()[4]) if m.groups()[4] is not None else None
     delta = None
-  elif re.fullmatch(r'today', time_period):
+  elif time_period == 'today':
     today = date.today()
     if modifier == "next":
       # The "next today" is tomorrow ;-)
@@ -121,7 +121,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       today = today - timedelta(days=1)
     year, month, day = today.year, today.month, today.day
     delta = None
-  elif re.fullmatch(r'tomorrow', time_period):
+  elif time_period == 'tomorrow':
     tomorrow = date.today() + timedelta(days=1)
     if modifier == "next":
       # The "next tomorrow" is two days from now ;-)
@@ -131,7 +131,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       tomorrow = tomorrow - timedelta(days=1)
     year, month, day = tomorrow.year, tomorrow.month, tomorrow.day
     delta = None
-  elif re.fullmatch(r'yesterday', time_period):
+  elif time_period == 'yesterday':
     yesterday = date.today() + timedelta(days=-1)
     if modifier == "next":
       # The "next yesterday" is today ;-)
@@ -141,29 +141,25 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       yesterday = yesterday - timedelta(days=1)
     year, month, day = yesterday.year, yesterday.month, yesterday.day
     delta = None
-  elif m := re.fullmatch(
-      r'(monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
-      time_period
-  ):
-    given_dow = m.groups()[0]
+  elif time_period in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
     today = date.today()
     monday = today - timedelta(days=today.weekday())
-    if given_dow == "monday":
+    if time_period == "monday":
       start = monday
-    elif given_dow == "tuesday":
+    elif time_period == "tuesday":
       start = monday + timedelta(days=1)
-    elif given_dow == "wednesday":
+    elif time_period == "wednesday":
       start = monday + timedelta(days=2)
-    elif given_dow == "thursday":
+    elif time_period == "thursday":
       start = monday + timedelta(days=3)
-    elif given_dow == "friday":
+    elif time_period == "friday":
       start = monday + timedelta(days=4)
-    elif given_dow == "saturday":
+    elif time_period == "saturday":
       start = monday + timedelta(days=5)
-    elif given_dow == "sunday":
+    elif time_period == "sunday":
       start = monday + timedelta(days=6)
     else:
-      print(f"{given_dow}? Sure, I'll work on it.")
+      print(f"{time_period}? Sure, I'll work on it.")
       sys.exit(1)
 
     if modifier == "next":
@@ -173,7 +169,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
 
     year, month, day = start.year, start.month, start.day
     delta = None
-  elif re.fullmatch(r'week', time_period):
+  elif time_period == 'week':
     today = date.today()
     monday = today - timedelta(days=today.weekday())
     if modifier == "next":
@@ -182,7 +178,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       monday -= timedelta(weeks=1)
     year, month, day = monday.year, monday.month, monday.day
     delta = timedelta(days=6)
-  elif re.fullmatch(r'month', time_period):
+  elif time_period == 'month':
     first_of_month = date.today().replace(day=1)
     if modifier == "next":
       first_of_month = first_of_month.replace(
@@ -200,7 +196,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       year=first_of_month.year+1 if first_of_month.month == 12 else first_of_month.year
     ) - timedelta(days=1)
     delta = end_of_month - first_of_month
-  elif re.fullmatch(r'year', time_period):
+  elif time_period == 'year':
     new_years_day = date.today().replace(month=1, day=1)
     if modifier == "next":
       new_years_day = new_years_day.replace(year=new_years_day.year+1)
