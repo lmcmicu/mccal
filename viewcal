@@ -20,7 +20,6 @@
 import argparse
 import re
 import sys
-import time
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -119,29 +118,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     elif modifier == "last":
       # The "last today" is yesterday ;-)
       today = today - timedelta(days=1)
-    year = today.year
-    month = today.month
-    day = today.day
-    delta = None
-  elif re.fullmatch(r'month', time_period):
-    today = date.today()
-    year = today.year
-    month = today.month
-    if modifier == "next":
-      month += 1
-    elif modifier == "last":
-      month -=1
-    day = None
-    delta = None
-  elif re.fullmatch(r'year', time_period):
-    today = date.today()
-    year = today.year
-    if modifier == "next":
-      year += 1
-    elif modifier == "last":
-      year -= 1
-    month = None
-    day = None
+    year, month, day = today.year, today.month, today.day
     delta = None
   elif re.fullmatch(r'tomorrow', time_period):
     tomorrow = date.today() + timedelta(days=1)
@@ -151,9 +128,7 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     elif modifier == "last":
       # The "last tomorrow" is today ;-)
       tomorrow = tomorrow - timedelta(days=1)
-    year = tomorrow.year
-    month = tomorrow.month
-    day = tomorrow.day
+    year, month, day = tomorrow.year, tomorrow.month, tomorrow.day
     delta = None
   elif re.fullmatch(r'yesterday', time_period):
     yesterday = date.today() + timedelta(days=-1)
@@ -163,44 +138,31 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     elif modifier == "last":
       # The "last yesterday" was two days ago ;-)
       yesterday = yesterday - timedelta(days=1)
-    year = yesterday.year
-    month = yesterday.month
-    day = yesterday.day
+    year, month, day = yesterday.year, yesterday.month, yesterday.day
     delta = None
-  elif re.fullmatch(r'week', time_period):
-    today = date.fromtimestamp(time.time())
-    start = today - timedelta(days=today.weekday())
-    if modifier == "next":
-      start += timedelta(weeks=1)
-    elif modifier == "last":
-      start -= timedelta(weeks=1)
-    year = start.year
-    month = start.month
-    day = start.day
-    delta = timedelta(days=6)
   elif m := re.fullmatch(
       r'(monday|tuesday|wednesday|thursday|friday|saturday|sunday)',
       time_period
   ):
-    dow = m.groups()[0]
-    today = date.fromtimestamp(time.time())
+    given_dow = m.groups()[0]
+    today = date.today()
     monday = today - timedelta(days=today.weekday())
-    if dow == "monday":
+    if given_dow == "monday":
       start = monday
-    elif dow == "tuesday":
+    elif given_dow == "tuesday":
       start = monday + timedelta(days=1)
-    elif dow == "wednesday":
+    elif given_dow == "wednesday":
       start = monday + timedelta(days=2)
-    elif dow == "thursday":
+    elif given_dow == "thursday":
       start = monday + timedelta(days=3)
-    elif dow == "friday":
+    elif given_dow == "friday":
       start = monday + timedelta(days=4)
-    elif dow == "saturday":
+    elif given_dow == "saturday":
       start = monday + timedelta(days=5)
-    elif dow == "sunday":
+    elif given_dow == "sunday":
       start = monday + timedelta(days=6)
     else:
-      print(f"{dow}? Sure, I'll work on it.")
+      print(f"{given_dow}? Sure, I'll work on it.")
       sys.exit(1)
 
     if modifier == "next":
@@ -208,10 +170,44 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     elif modifier == "last":
       start -= timedelta(weeks=1)
 
-    year = start.year
-    month = start.month
-    day = start.day
+    year, month, day = start.year, start.month, start.day
     delta = None
+  elif re.fullmatch(r'week', time_period):
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    if modifier == "next":
+      monday += timedelta(weeks=1)
+    elif modifier == "last":
+      monday -= timedelta(weeks=1)
+    year, month, day = monday.year, monday.month, monday.day
+    delta = timedelta(days=6)
+  elif re.fullmatch(r'month', time_period):
+    first_of_month = date.today().replace(day=1)
+    if modifier == "next":
+      first_of_month = first_of_month.replace(
+        month=first_of_month.month+1 if first_of_month.month != 12 else 1,
+        year=first_of_month.year+1 if first_of_month.month == 12 else first_of_month.year
+      )
+    elif modifier == "last":
+      first_of_month = first_of_month.replace(
+        month=first_of_month.month-1 if first_of_month.month != 1 else 12,
+        year=first_of_month.year-1 if first_of_month.month == 1 else first_of_month.year
+      )
+    year, month, day = first_of_month.year, first_of_month.month, first_of_month.day
+    end_of_month = first_of_month.replace(
+      month=first_of_month.month+1 if first_of_month.month != 12 else 1,
+      year=first_of_month.year+1 if first_of_month.month == 12 else first_of_month.year
+    ) - timedelta(days=1)
+    delta = end_of_month - first_of_month
+  elif re.fullmatch(r'year', time_period):
+    new_years_day = date.today().replace(month=1, day=1)
+    if modifier == "next":
+      new_years_day = new_years_day.replace(year=new_years_day.year+1)
+    elif modifier == "last":
+      new_years_day = new_years_day.replace(year=new_years_day.year-1)
+    year, month, day = new_years_day.year, new_years_day.month, new_years_day.day
+    last_day_of_year = new_years_day.replace(year=new_years_day.year+1) - timedelta(days=1)
+    delta = last_day_of_year - new_years_day
   else:
     print(f"Illegal time period: {time_period}")
     sys.exit(1)
@@ -223,14 +219,21 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
 
 
 if __name__ == "__main__":
+  default_cal = f"{str(Path.home())}/.mycalendar.txt"
+  # If viewcal is run with no arguments, interpret this as if it were `viewcal today`:
+  if len(sys.argv) == 1:
+    main(default_cal, None, "today", False, False)
+    sys.exit(0)
+
+  # Otherwise parse the command line arguments:
   parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
   parser.add_argument(
     '-f', '--file', metavar='FILE',
-    help="Use the given calendar file instead of '~/.mycalendar.txt'"
+    help=f"Use the given calendar file instead of '{default_cal}'"
   )
   parser.add_argument(
     '-a', '--all',
-    help='Also show snoozed events that will trigger reminders during the given period',
+    help='Also show snoozed events that will trigger reminders during the given PERIOD',
     action="store_true"
   )
   parser.add_argument(
@@ -238,13 +241,16 @@ if __name__ == "__main__":
     help='Show the date and time at which the reminder for a given event will be triggered',
     action="store_true"
   )
-  parser.add_argument('MODIFIER', choices=['this', 'next', 'last'], nargs='?')
-  parser.add_argument('PERIOD', help="Can be one of: year, month, week, monday, \
-  tuesday, wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday \
-  yyyy-mm-dd, yyyy-mm, yyyy")
+  parser.add_argument(
+    'MODIFIER', choices=['this', 'next', 'last'], nargs='?',
+    help="If left unspecified, defaults to 'this'. Show the events for this PERIOD, the next \
+    PERIOD, or the last PERIOD, respectively.")
+  parser.add_argument('PERIOD', help="If left unspecified, defaults to 'today'. Can be one of: \
+  year, month, week, monday, tuesday, wednesday, thursday, friday, saturday, sunday, today, \
+  tomorrow, yesterday yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
   main(
-    args.file or f"{str(Path.home())}/.mycalendar.txt",
+    args.file or default_cal,
     args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
     args.PERIOD.lower(),
     args.all,
