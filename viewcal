@@ -72,8 +72,6 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
       event_year = remind_event_year if snoozed else event[5]
       event_month = remind_event_month if snoozed else event[6]
       event_day = remind_event_day if snoozed else event[7]
-      event_hour = remind_event_hour if snoozed else event[8]
-      event_minute = remind_event_minute if snoozed else event[9]
 
       # Construct the dates for the range comparison:
       event_date = date(year=event_year, month=event_month, day=event_day)
@@ -141,7 +139,8 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
       yesterday = yesterday - timedelta(days=1)
     year, month, day = yesterday.year, yesterday.month, yesterday.day
     delta = None
-  elif time_period in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']:
+  elif time_period in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+                       'sunday']:
     today = date.today()
     monday = today - timedelta(days=today.weekday())
     if time_period == "monday":
@@ -169,6 +168,44 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
 
     year, month, day = start.year, start.month, start.day
     delta = None
+  elif time_period in ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august',
+                       'september', 'october', 'november', 'december']:
+    if time_period == "january":
+      first_of_month = date.today().replace(month=1, day=1)
+    elif time_period == "february":
+      first_of_month = date.today().replace(month=2, day=1)
+    elif time_period == "march":
+      first_of_month = date.today().replace(month=3, day=1)
+    elif time_period == "april":
+      first_of_month = date.today().replace(month=4, day=1)
+    elif time_period == "may":
+      first_of_month = date.today().replace(month=5, day=1)
+    elif time_period == "june":
+      first_of_month = date.today().replace(month=6, day=1)
+    elif time_period == "july":
+      first_of_month = date.today().replace(month=7, day=1)
+    elif time_period == "august":
+      first_of_month = date.today().replace(month=8, day=1)
+    elif time_period == "september":
+      first_of_month = date.today().replace(month=9, day=1)
+    elif time_period == "october":
+      first_of_month = date.today().replace(month=10, day=1)
+    elif time_period == "november":
+      first_of_month = date.today().replace(month=11, day=1)
+    elif time_period == "december":
+      first_of_month = date.today().replace(month=12, day=1)
+
+    if modifier == "next":
+      first_of_month = first_of_month.replace(year=first_of_month.year+1)
+    elif modifier == "last":
+      first_of_month = first_of_month.replace(year=first_of_month.year-1)
+
+    year, month, day = first_of_month.year, first_of_month.month, first_of_month.day
+    end_of_month = first_of_month.replace(
+      month=first_of_month.month+1 if first_of_month.month != 12 else 1,
+      year=first_of_month.year+1 if first_of_month.month == 12 else first_of_month.year
+    ) - timedelta(days=1)
+    delta = end_of_month - first_of_month
   elif time_period == 'week':
     today = date.today()
     monday = today - timedelta(days=today.weekday())
@@ -244,7 +281,8 @@ if __name__ == "__main__":
     PERIOD, or the last PERIOD, respectively.")
   parser.add_argument('PERIOD', help="If left unspecified, defaults to 'today'. Can be one of: \
   year, month, week, monday, tuesday, wednesday, thursday, friday, saturday, sunday, today, \
-  tomorrow, yesterday, yyyy-mm-dd, yyyy-mm, yyyy")
+  tomorrow, yesterday, january, february, march, april, may, june, july, august, september, \
+  october, november, december, yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
   main(
     args.file or default_cal,

@@ -7,9 +7,16 @@ test/output:
 	mkdir -p $@
 
 .PHONY: test
-test: test_viewcal
+test: test_viewcal test_code
 
-.PHONY: test_viewcal
+.PHONY: test_code
+test_code:
+	@echo "Cheking code for style and lint ..."
+	pycodestyle --max-line-length=100 --indent-size=2 viewcal
+	flake8 --max-line-length=100 --indent-size=2 viewcal
+	@echo "Test succeeded!"
+
+.PHONY: test_viewcal test_code
 test_viewcal: | test/output
 	faketime '2024-12-31' ./viewcal -f test/test_calendar.txt 2024-01-01 > $|/result.txt
 	echo "---TC01 Completed---" >> $|/result.txt
@@ -91,6 +98,16 @@ test_viewcal: | test/output
 	echo "---TC39 Completed---" >> $|/result.txt
 	faketime '2024-03-04' ./viewcal -f test/test_calendar.txt last thursday >> $|/result.txt
 	echo "---TC40 Completed---" >> $|/result.txt
+	faketime '2024-03-18' ./viewcal -f test/test_calendar.txt march >> $|/result.txt
+	echo "---TC41 Completed---" >> $|/result.txt
+	faketime '2024-03-18' ./viewcal -f test/test_calendar.txt january >> $|/result.txt
+	echo "---TC42 Completed---" >> $|/result.txt
+	faketime '2024-03-18' ./viewcal -f test/test_calendar.txt february >> $|/result.txt
+	echo "---TC43 Completed---" >> $|/result.txt
+	faketime '2024-03-18' ./viewcal -f test/test_calendar.txt next january >> $|/result.txt
+	echo "---TC44 Completed---" >> $|/result.txt
+	faketime '2024-12-01' ./viewcal -f test/test_calendar.txt last december >> $|/result.txt
+	echo "---TC45 Completed---" >> $|/result.txt
 	diff -q test/expected/expected.txt $|/result.txt
 	@echo "Test succeeded!"
 
