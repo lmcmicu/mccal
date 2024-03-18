@@ -41,6 +41,14 @@ I am currently in the process of re-coding *mccal* in python.
 
 - customise your window manager to run `run_findapps.sh` at startup.
 
+## Turning off remote syncing
+
+- Syncing your calendar file(s) to a remote server is possible using *mccal*
+  and is turned on by default. To turn it off see
+  [here](https://github.com/lmcmicu/mccal/issues/18).
+  
+- To use remote syncing you must edit `synccal` and change the entries for
+  `$remote_host` and `$remote_dir`
 
 ## User interface
 
