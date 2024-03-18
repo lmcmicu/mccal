@@ -109,6 +109,17 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
     day = int(m.groups()[4]) if m.groups()[4] is not None else None
     delta = None
+    if day is None and month is None:
+      new_years_day = date(year=year, month=1, day=1)
+      last_day_of_year = new_years_day.replace(year=new_years_day.year+1) - timedelta(days=1)
+      delta = last_day_of_year - new_years_day
+    elif day is None:
+      first_of_month = date(year=year, month=month, day=1)
+      end_of_month = first_of_month.replace(
+        month=first_of_month.month+1 if first_of_month.month != 12 else 1,
+        year=first_of_month.year+1 if first_of_month.month == 12 else first_of_month.year
+      ) - timedelta(days=1)
+      delta = end_of_month - first_of_month
   elif time_period == 'today':
     today = date.today()
     if modifier == "next":
