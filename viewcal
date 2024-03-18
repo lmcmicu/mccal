@@ -97,13 +97,42 @@ def sort_events(events):
   return sorted(events, key=lambda x: (x[5], x[6], x[7], x[8], x[9]))
 
 
-def format_events(events):
+def format_events(events, verbose):
   # Add back the separators and quotes:
-  formatted_events = [f'{x[5]:04}-{x[6]:02}-{x[7]:02} {x[8]:02}:{x[9]:02} {x[10]}' for x in events]
-  return formatted_events
+  if not verbose:
+    pretty_events = [f'{x[5]:04}-{x[6]:02}-{x[7]:02} {x[8]:02}:{x[9]:02} {x[10]}' for x in events]
+  else:
+    raw_events = {}
+    for x in events:
+      key = (x[5], x[6], x[7])
+      if raw_events.get(key) is None:
+        raw_events[key] = []
+      raw_events[key].append(f"{x[8]:02}:{x[9]:02} {x[10]}")
+
+    pretty_events = []
+    raw_events = raw_events.items()
+    year = month = day = None
+    show_months = len(set([(k[0], k[1]) for (k, e) in raw_events])) > 1
+    for (key, events) in raw_events:
+      event_year, event_month, event_day = key[0], key[1], key[2]
+      if show_months and (event_year != year or event_month != month):
+        pretty_events.append("{}\n".format(
+          date(year=event_year, month=event_month, day=event_day).strftime("%B %Y")
+        ))
+        day = None
+      if event_day != day:
+        pretty_events.append("{}".format(
+          date(year=event_year, month=event_month, day=event_day).strftime("%A, %B %d, %Y")
+        ))
+      pretty_events.append("---")
+      pretty_events += events
+      pretty_events.append("---\n")
+      year, month, day = event_year, event_month, event_day
+
+  return pretty_events
 
 
-def main(calendar_file, modifier, time_period, include_snoozes, include_remind_time):
+def main(calendar_file, modifier, time_period, include_snoozes, include_remind_time, verbose):
   if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
     year = int(m.groups()[0])
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
@@ -260,14 +289,14 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
   events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta)
   if events:
     events = sort_events(events)
-    print('\n'.join(format_events(events)))
+    print('\n'.join(format_events(events, verbose)))
 
 
 if __name__ == "__main__":
   default_cal = f"{str(Path.home())}/.mycalendar.txt"
   # If viewcal is run with no arguments, interpret this as if it were `viewcal today`:
   if len(sys.argv) == 1:
-    main(default_cal, None, "today", False, False)
+    main(default_cal, None, "today", False, False, False)
     sys.exit(0)
 
   # Otherwise parse the command line arguments:
@@ -287,6 +316,11 @@ if __name__ == "__main__":
     action="store_true"
   )
   parser.add_argument(
+    '-v', '--verbose',
+    help='Display the events in a somewhat more readable format',
+    action='store_true'
+  )
+  parser.add_argument(
     'MODIFIER', choices=['this', 'next', 'last'], nargs='?',
     help="If left unspecified, defaults to 'this'. Show the events for this PERIOD, the next \
     PERIOD, or the last PERIOD, respectively.")
@@ -300,5 +334,6 @@ if __name__ == "__main__":
     args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
     args.PERIOD.lower(),
     args.all,
-    args.reminders
+    args.reminders,
+    args.verbose
   )

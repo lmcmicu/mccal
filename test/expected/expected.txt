@@ -285,3 +285,206 @@
 ---TC49 Completed---
 2023-12-31 08:00 Event
 ---TC50 Completed---
+Monday, January 01, 2024
+---
+08:00 Event
+---
+
+---TC51 Completed---
+Monday, January 01, 2024
+---
+08:00 Event
+---
+
+Tuesday, January 02, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 03, 2024
+---
+08:00 Event
+---
+
+---TC52 Completed---
+Monday, January 01, 2024
+---
+08:00 Event
+---
+
+Tuesday, January 02, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 03, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 10, 2024
+---
+08:00 Event
+---
+
+Sunday, January 28, 2024
+---
+08:00 Event
+---
+
+Monday, January 29, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 31, 2024
+---
+08:00 Event
+08:00 Event
+---
+
+---TC53 Completed---
+January 2024
+
+Monday, January 01, 2024
+---
+08:00 Event
+---
+
+Tuesday, January 02, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 03, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 10, 2024
+---
+08:00 Event
+---
+
+Sunday, January 28, 2024
+---
+08:00 Event
+---
+
+Monday, January 29, 2024
+---
+08:00 Event
+---
+
+Wednesday, January 31, 2024
+---
+08:00 Event
+08:00 Event
+---
+
+February 2024
+
+Thursday, February 01, 2024
+---
+08:00 Event
+---
+
+Friday, February 02, 2024
+---
+08:00 Event
+---
+
+Saturday, February 03, 2024
+---
+08:00 Event
+---
+
+Monday, February 26, 2024
+---
+08:00 Event
+---
+
+Tuesday, February 27, 2024
+---
+08:00 Event
+---
+
+Wednesday, February 28, 2024
+---
+08:00 Event
+---
+
+Thursday, February 29, 2024
+---
+08:00 Event
+---
+
+March 2024
+
+Friday, March 01, 2024
+---
+08:00 Event
+---
+
+Saturday, March 02, 2024
+---
+08:00 Event
+---
+
+Sunday, March 03, 2024
+---
+08:00 Event
+---
+
+Thursday, March 07, 2024
+---
+08:00 Event
+---
+
+Tuesday, March 12, 2024
+---
+08:00 Event
+---
+
+Tuesday, March 19, 2024
+---
+08:00 Event
+---
+
+Saturday, March 23, 2024
+---
+08:00 Event
+---
+
+Saturday, March 30, 2024
+---
+08:00 Event
+---
+
+April 2024
+
+Friday, April 05, 2024
+---
+08:00 Event
+---
+
+Friday, April 12, 2024
+---
+08:00 Event
+---
+
+October 2024
+
+Wednesday, October 02, 2024
+---
+08:00 Event
+---
+
+December 2024
+
+Tuesday, December 31, 2024
+---
+08:00 Event
+---
+
+---TC54 Completed---

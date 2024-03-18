@@ -118,6 +118,14 @@ test_viewcal: | test/output
 	echo "---TC49 Completed---" >> $|/result.txt
 	faketime '2024-01-01' ./viewcal -f test/test_calendar.txt 2023-12 >> $|/result.txt
 	echo "---TC50 Completed---" >> $|/result.txt
+	faketime '2024-01-01' ./viewcal -v -f test/test_calendar.txt today >> $|/result.txt
+	echo "---TC51 Completed---" >> $|/result.txt
+	faketime '2024-01-01' ./viewcal -v -f test/test_calendar.txt this week >> $|/result.txt
+	echo "---TC52 Completed---" >> $|/result.txt
+	faketime '2024-01-01' ./viewcal -v -f test/test_calendar.txt this month >> $|/result.txt
+	echo "---TC53 Completed---" >> $|/result.txt
+	faketime '2024-01-01' ./viewcal -v -f test/test_calendar.txt this year >> $|/result.txt
+	echo "---TC54 Completed---" >> $|/result.txt
 	diff -q test/expected/expected.txt $|/result.txt
 	@echo "Test succeeded!"
 
