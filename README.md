@@ -24,8 +24,7 @@ I am currently in the process of re-coding *mccal* in python.
 ## Installation
 
 - Download the source code for the [latest stable
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) or the [alpha
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of *mccal* and
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) of *mccal* and
   copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
   `run_findapps.sh`, and `viewcal` to a directory in your executable path
   (e.g., `~/bin/`).
@@ -71,26 +70,8 @@ appointment coming due (in addition to the popup gxmessage).
 
 - displays appointments
 
-```
-usage: viewcal [-h] [-f FILE] [-a] [-r] [-v] [{this,next,last}] PERIOD
-
-Simple Reminder Calendar
-
-positional arguments:
-  {this,next,last}      If left unspecified, defaults to 'this'. Show the events for this PERIOD, the next PERIOD,
-                        or the last PERIOD, respectively.
-  PERIOD                If left unspecified, defaults to 'today'. Can be one of: year, month, week, monday, tuesday,
-                        wednesday, thursday, friday, saturday, sunday, today, tomorrow, yesterday, january,
-                        february, march, april, may, june, july, august, september, october, november, december,
-                        yyyy-mm-dd, yyyy-mm, yyyy
-
-options:
-  -h, --help            show this help message and exit
-  -f FILE, --file FILE  Use the given calendar file instead of '/home/mike/.mycalendar.txt'
-  -a, --all             Also show snoozed events that will trigger reminders during the given PERIOD
-  -r, --reminders       Show the date and time at which the reminder for a given event will be triggered
-  -v, --verbose         Display the events in a somewhat more readable format
-```
+        Usage:
+        viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]
 
 
 ### `run_findapps.sh`
