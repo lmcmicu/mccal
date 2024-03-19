@@ -1,21 +1,21 @@
-# *mccal*: a simple reminder calendar
+# **mccal**: a simple reminder calendar
 
-*mccal* is mainly useful for giving you reminders, which
+**mccal** is mainly useful for giving you reminders, which
 you can snooze, as often as you like, for however many minutes, hours, or
-days that you would like. When I originally wrote *mccal* in the early 2000s,
+days that you would like. When I originally wrote **mccal** in the early 2000s,
 none of the available calendars for Linux/UNIX had this kind of snoozing
-functionality. This is the main reason I wrote *mccal*.
+functionality. This is the main reason I wrote **mccal**.
 
 When an appointment becomes due, the program will pop up a window with the
 appointment text, which you can then dismiss or snooze as desired. The
 program also allows you to optionally indicate a set of commands it should
-run at that time (e.g., emailing someone, ringing a bell, etc.). *mccal* uses
+run at that time (e.g., emailing someone, ringing a bell, etc.). **mccal** uses
 an external program to implement the window popup. Currently the options are
 [zenity](https://help.gnome.org/users/zenity/stable/),
 [gxmessage](https://directory.fsf.org/wiki/Gxmessage), and
 [cocoadialog](https://github.com/cocoadialog/) (MacOS).
 
-I am currently in the process of re-coding *mccal* in python.
+I am currently in the process of re-coding **mccal** in python.
 
 ## Requirements
 
@@ -24,8 +24,9 @@ I am currently in the process of re-coding *mccal* in python.
 ## Installation
 
 - Download the source code for the [latest stable
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) or the [alpha
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of *mccal* and
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) or the [latest
+  alpha
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of **mccal** and
   copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
   `run_findapps.sh`, and `viewcal` to a directory in your executable path
   (e.g., `~/bin/`).
@@ -44,7 +45,7 @@ I am currently in the process of re-coding *mccal* in python.
 
 ## Turning off remote syncing
 
-- Syncing your calendar file(s) to a remote server is possible using *mccal*
+- Syncing your calendar file(s) to a remote server is possible using **mccal**
   and is turned on by default. To turn it off see
   [here](https://github.com/lmcmicu/mccal/issues/18).
   
@@ -74,6 +75,9 @@ appointment coming due (in addition to the popup gxmessage).
         Usage:
         viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]
 
+Note that in the [latest alpha
+release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of
+**mccal**, the usage has changed. See the release notes for further information.
 
 ### `run_findapps.sh`
 
