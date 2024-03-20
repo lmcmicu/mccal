@@ -20,20 +20,55 @@
 import argparse
 import re
 import sys
+import time
 import wx
+from datetime import datetime, timedelta
 
 
 global answer
 
-def show_reminder(message):
-  def on_answer(event):
-    print(f"Answer: {event.GetString()}")
+def process_reminder_ui(reminder_text, event_id, calfile):
+  def on_dismiss(_event):
+    sys,exit(0)
 
-  def on_snooze(event):
-    print(f"Snooze: {answer.GetValue()}")
+  def on_answer(_event):
+    on_snooze(_event)
 
-  def on_dismiss(event):
-    print(f"Dismiss: {answer.GetValue()}")
+  def on_snooze(_event):
+    m = re.fullmatch(r"([\d]+)([mhd])?", answer.GetValue())
+    if not m:
+      wx.MessageDialog(
+        None,
+        f"Invalid snooze value: '{answer.GetValue()}'. Please use <num>[m|h|d] format.",
+      ).ShowModal()
+    else:
+      snooze = int(m.groups()[0])
+      if snooze < 1:
+        wx.MessageDialog(None, "Cannot snooze for less than 1 minute.").ShowModal()
+      else:
+        time_modifier = m.groups()[1] if len(m.groups()) > 1 else "m"
+        if time_modifier == "h":
+          snooze *= 3600
+        elif time_modifier == "d":
+          snooze *= 86400
+        else:
+          snooze *= 60
+
+        # Reset the time to current time in case there has been a long delay between user responses:
+        alarm_date = datetime.today()
+        alarm_date = alarm_date.replace(second=0, microsecond=0)
+        alarm_date = alarm_date + timedelta(seconds=snooze)
+
+        # Generate a new event id:
+        id = time.time()
+
+        # Write the new snooze event to the calendar file:
+        print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
+              f'{alarm_date.hour}:{alarm_date.minute} "{reminder_text}"',
+              file=calfile)
+        calfile.close()
+        # TODO: Do we still want to call synccal here?
+        sys.exit(0)
 
   app = wx.App()
 
@@ -45,7 +80,7 @@ def show_reminder(message):
   answer_panel = wx.Panel(content_panel)
   button_panel = wx.Panel(content_panel)
 
-  message = wx.StaticText(message_panel, -1, label = f"{message}")
+  message = wx.StaticText(message_panel, -1, label = f"{reminder_text}")
   message_box = wx.BoxSizer(wx.HORIZONTAL)
   message_box.Add(message)
   message_panel.SetSizerAndFit(message_box)
@@ -55,7 +90,7 @@ def show_reminder(message):
     -1,
     label = "Either click Dismiss to confirm or enter the amount\n"
     "of time you would like to snooze this alarm for\n"
-    "(<num>\[m\|h\|d\])."
+    "(<num>[m|h|d])."
   )
   question_box = wx.BoxSizer(wx.HORIZONTAL)
   question_box.Add(question)
@@ -107,6 +142,53 @@ def show_reminder(message):
   app.MainLoop()
   app.Destroy()
 
-  
+
+def process_reminder_email(reminder_text):
+  # TODO. Note that this essentially is going to be what replaces the extra commands that the
+  # original version of mccal used to be able to perform in principle. I only used these for the
+  # first little while and then very quickly stopped finding them useful. (The main thing they
+  # were useful for was for sending an email using mutt or mailx. I thought that was going to be
+  # more important than it was.) In the new version of mccal I still want to support sending an
+  # email when an event comes due in addition to popping up a reminder, but that's all that I want
+  # to support. So this function is going to accept a reminder_text as a parameter and then send
+  # an email with the recipient details looked up in some configuration file.
+  print("The function process_reminder_email() is not yet implemented")
+
+def process_reminder_stdout(reminder_text):
+  # Simply output the reminder_text to STDOUT.
+  print(reminder_text)
+
+def write_id_to_processed_events_file(event_id, procfile):
+  print(event_id, file=procfile)
+
+
+def main(calfile, procfile, event_id, reminder_text, text_mode, send_email):
+  # TODO: Are we still going to have a call to synccal here?
+
+  # Mark the event as processed by writing it to procfile
+  write_id_to_processed_events_file(event_id, procfile)
+
+  # TODO: Are we still going to have a call to synccal here?
+
+  if send_email:
+    process_reminder_email(reminder_text)
+
+  if text_mode:
+    process_reminder_stdout(reminder_text)
+  else:
+    process_reminder_ui(reminder_text, event_id, calfile)
+
+
 if __name__ == "__main__":
-  show_reminder("2024-03-15 18:00 test")
+  parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
+  parser.add_argument('CALENDAR', help='A calendar file', type=argparse.FileType('a'))
+  parser.add_argument('OUTPUT', help='The file where the processed event will be written to',
+                      type=argparse.FileType('a'))
+  parser.add_argument('ID', help='The event ID associated with this reminder')
+  parser.add_argument('REMINDER_TEXT', help='The text associated with this reminder')
+  parser.add_argument('-t', '--text_mode', action='store_true',
+                      help='Output the reminder text to STDOUT without any popups')
+  parser.add_argument('-m', '--mail', action='store_true',
+                      help='Send the reminder text as an email to the configured recipient')
+  args = parser.parse_args()
+  main(args.CALENDAR, args.OUTPUT, args.ID, args.REMINDER_TEXT, args.text_mode, args.mail)
