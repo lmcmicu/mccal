@@ -17,90 +17,96 @@
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
+import argparse
+import re
+import sys
 import wx
 
 
 global answer
 
-def popup_dialog(message):
-    def on_answer(event):
-        print(f"Answer: {event.GetString()}")
+def show_reminder(message):
+  def on_answer(event):
+    print(f"Answer: {event.GetString()}")
 
-    def on_snooze(event):
-        print(f"Snooze: {answer.GetValue()}")
+  def on_snooze(event):
+    print(f"Snooze: {answer.GetValue()}")
 
-    def on_dismiss(event):
-        print(f"Dismiss: {answer.GetValue()}")
+  def on_dismiss(event):
+    print(f"Dismiss: {answer.GetValue()}")
 
-    app = wx.App()
+  app = wx.App()
 
-    frame = wx.Frame(None, title='mccal reminder')
-    main_panel = wx.Panel(frame)
-    content_panel = wx.Panel(main_panel)
-    message_panel = wx.Panel(content_panel)
-    question_panel = wx.Panel(content_panel)
-    answer_panel = wx.Panel(content_panel)
-    button_panel = wx.Panel(content_panel)
+  frame = wx.Frame(None, title='mccal reminder')
+  main_panel = wx.Panel(frame)
+  content_panel = wx.Panel(main_panel)
+  message_panel = wx.Panel(content_panel)
+  question_panel = wx.Panel(content_panel)
+  answer_panel = wx.Panel(content_panel)
+  button_panel = wx.Panel(content_panel)
 
-    message = wx.StaticText(message_panel, -1, label = f"{message}")
-    message_box = wx.BoxSizer(wx.HORIZONTAL)
-    message_box.Add(message)
-    message_panel.SetSizerAndFit(message_box)
+  message = wx.StaticText(message_panel, -1, label = f"{message}")
+  message_box = wx.BoxSizer(wx.HORIZONTAL)
+  message_box.Add(message)
+  message_panel.SetSizerAndFit(message_box)
 
-    question = wx.StaticText(question_panel, -1,
-                             label = "Either click Dismiss to confirm or enter the amount\n"
-                             "of time you would like to snooze this alarm for\n"
-                             "(<num>\[m\|h\|d\]).")
-    question_box = wx.BoxSizer(wx.HORIZONTAL)
-    question_box.Add(question)
-    question_panel.SetSizerAndFit(question_box)
+  question = wx.StaticText(
+    question_panel,
+    -1,
+    label = "Either click Dismiss to confirm or enter the amount\n"
+    "of time you would like to snooze this alarm for\n"
+    "(<num>\[m\|h\|d\])."
+  )
+  question_box = wx.BoxSizer(wx.HORIZONTAL)
+  question_box.Add(question)
+  question_panel.SetSizerAndFit(question_box)
 
-    answer = wx.TextCtrl(
-        answer_panel,
-        value="",
-        style=wx.TE_PROCESS_ENTER,
-        size=(question.GetSize().GetWidth(), 30)
-    )
-    answer.Bind(wx.EVT_TEXT_ENTER, on_answer, answer)
-    answer_box = wx.BoxSizer(wx.HORIZONTAL)
-    answer_box.Add(answer)
-    answer_panel.SetSizerAndFit(answer_box)
+  answer = wx.TextCtrl(
+    answer_panel,
+    value="",
+    style=wx.TE_PROCESS_ENTER,
+    size=(question.GetSize().GetWidth(), 30)
+  )
+  answer.Bind(wx.EVT_TEXT_ENTER, on_answer, answer)
+  answer_box = wx.BoxSizer(wx.HORIZONTAL)
+  answer_box.Add(answer)
+  answer_panel.SetSizerAndFit(answer_box)
 
-    dismiss_btn = wx.Button(button_panel, label ="Dismiss")
-    snooze_btn = wx.Button(button_panel, label ="Snooze")
-    dismiss_btn.Bind(wx.EVT_BUTTON, on_dismiss, dismiss_btn)
-    snooze_btn.Bind(wx.EVT_BUTTON, on_snooze, snooze_btn)
-    button_box = wx.BoxSizer(wx.HORIZONTAL)
-    button_box.Add(dismiss_btn)
-    button_box.Add(snooze_btn)
-    button_panel.SetSizerAndFit(button_box)
+  dismiss_btn = wx.Button(button_panel, label ="Dismiss")
+  snooze_btn = wx.Button(button_panel, label ="Snooze")
+  dismiss_btn.Bind(wx.EVT_BUTTON, on_dismiss, dismiss_btn)
+  snooze_btn.Bind(wx.EVT_BUTTON, on_snooze, snooze_btn)
+  button_box = wx.BoxSizer(wx.HORIZONTAL)
+  button_box.Add(dismiss_btn)
+  button_box.Add(snooze_btn)
+  button_panel.SetSizerAndFit(button_box)
 
-    content_box = wx.BoxSizer(wx.VERTICAL)
-    content_box.AddSpacer(12)
-    content_box.Add(message_panel, 0, wx.ALL|wx.ALIGN_LEFT)
-    content_box.AddSpacer(12)
-    content_box.Add(question_panel, 0, wx.ALL|wx.ALIGN_LEFT)
-    content_box.AddSpacer(12)
-    content_box.Add(answer_panel, 0, wx.ALL|wx.ALIGN_LEFT)
-    content_box.AddSpacer(12)
-    content_box.Add(button_panel, 0, wx.ALL|wx.ALIGN_RIGHT)
-    content_box.AddSpacer(8)
-    content_panel.SetSizerAndFit(content_box)
+  content_box = wx.BoxSizer(wx.VERTICAL)
+  content_box.AddSpacer(12)
+  content_box.Add(message_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(question_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(answer_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(button_panel, 0, wx.ALL|wx.ALIGN_RIGHT)
+  content_box.AddSpacer(8)
+  content_panel.SetSizerAndFit(content_box)
 
-    main_box = wx.BoxSizer(wx.HORIZONTAL)
-    main_box.AddSpacer(12)
-    main_box.Add(content_panel, 0, wx.ALL|wx.ALIGN_CENTER)
-    main_box.AddSpacer(12)
-    main_panel.SetSizerAndFit(main_box)    
+  main_box = wx.BoxSizer(wx.HORIZONTAL)
+  main_box.AddSpacer(12)
+  main_box.Add(content_panel, 0, wx.ALL|wx.ALIGN_CENTER)
+  main_box.AddSpacer(12)
+  main_panel.SetSizerAndFit(main_box)
 
-    frame.Fit()
-    frame.SetMinSize(frame.GetBestSize())
-    frame.Center()
-    frame.Show()
+  frame.Fit()
+  frame.SetMinSize(frame.GetBestSize())
+  frame.Center()
+  frame.Show()
 
-    app.MainLoop()
-    app.Destroy()
+  app.MainLoop()
+  app.Destroy()
 
   
 if __name__ == "__main__":
-    popup_dialog("2024-03-15 18:00 test")
+  show_reminder("2024-03-15 18:00 test")
