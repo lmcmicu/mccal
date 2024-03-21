@@ -72,6 +72,8 @@ def process_reminder_ui(reminder_text, event_id, calfile):
 
   app = wx.App()
 
+  reminder_text = reminder_text.strip('\"')
+
   frame = wx.Frame(None, title='mccal reminder')
   main_panel = wx.Panel(frame)
   content_panel = wx.Panel(main_panel)
