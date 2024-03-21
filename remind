@@ -109,13 +109,13 @@ def process_reminder_ui(reminder_text, event_id, calfile):
   answer_box.Add(answer)
   answer_panel.SetSizerAndFit(answer_box)
 
-  dismiss_btn = wx.Button(button_panel, label ="Dismiss")
   snooze_btn = wx.Button(button_panel, label ="Snooze")
-  dismiss_btn.Bind(wx.EVT_BUTTON, on_dismiss, dismiss_btn)
+  dismiss_btn = wx.Button(button_panel, label ="Dismiss")
   snooze_btn.Bind(wx.EVT_BUTTON, on_snooze, snooze_btn)
+  dismiss_btn.Bind(wx.EVT_BUTTON, on_dismiss, dismiss_btn)
   button_box = wx.BoxSizer(wx.HORIZONTAL)
-  button_box.Add(dismiss_btn)
   button_box.Add(snooze_btn)
+  button_box.Add(dismiss_btn)
   button_panel.SetSizerAndFit(button_box)
 
   content_box = wx.BoxSizer(wx.VERTICAL)
