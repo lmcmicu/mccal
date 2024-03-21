@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env python3
 
 # Copyright 2006-2024 Michael Cuffaro
 # 
@@ -17,217 +17,174 @@
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
-
-BEGIN {
-    push @INC, "/home/mike/lib";
-}
-
-use strict;
-use DateTime;
-use Time::HiRes qw ( time );
-use commonfuncs;
-
-chomp (my $timeZone = `cat /etc/timezone`);
-my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
-
-# Set this to one of the PopupReminder<...> functions defined below.
-my $PopupFunction = \&PopupReminderZenity;
+import argparse
+import re
+import sys
+import time
+import wx
+from datetime import datetime, timedelta
 
 
-sub PopupReminderZenity {
-    my ($text) = @_;
-    print "\a"; # sound the system bell
-    my $userResponse;
-    my $retVal;
-    my $reminderText = $text;
-    $reminderText =~ s/\"//g;
-    my $prog = "zenity --entry "
-        . "--ok-label Snooze --cancel-label Dismiss "
-        . "--title \'mccal reminder\' "
-        . "--text=\""
-        . "$reminderText \n\n"
-        . "Either click Dismiss to confirm or enter the amount\n"
-        . "of time you would like to snooze this alarm for\n"
-        . "(<num>\[m\|h\|d\])."
-        . "\"";
-    do {
-        $userResponse = `$prog`;
-        $retVal = $?;
-    } while ($retVal == 0
-             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
-                 || $userResponse =~ /^0+[mhd]{0,1}/));
+global answer
 
-    if ($retVal != 0) {
-        # user pressed the Dismiss button.
-        return 0;
-    }
-    return $userResponse;
-}
+def process_reminder_ui(reminder_text, event_id, calfile):
+  def on_dismiss(_event):
+    sys.exit(0)
+
+  def on_answer(_event):
+    on_snooze(_event)
+
+  def on_snooze(_event):
+    m = re.fullmatch(r"([\d]+)([mhd])?", answer.GetValue())
+    if not m:
+      wx.MessageDialog(
+        None,
+        f"Invalid snooze value: '{answer.GetValue()}'. Please use <num>[m|h|d] format.",
+      ).ShowModal()
+    else:
+      snooze = int(m.groups()[0])
+      if snooze < 1:
+        wx.MessageDialog(
+          None,
+          "Sorry but you can't snooze for less than 1 minute. Please try again."
+        ).ShowModal()
+      else:
+        time_modifier = m.groups()[1] if len(m.groups()) > 1 else "m"
+        if time_modifier == "h":
+          snooze *= 3600
+        elif time_modifier == "d":
+          snooze *= 86400
+        else:
+          snooze *= 60
+
+        # Reset the base for the alarm time to the current time, since in principle a long time can
+        # have passed between the time that the dialog was first popped up and the time that this
+        # response has been received.
+        alarm_date = datetime.today()
+        alarm_date = alarm_date.replace(second=0, microsecond=0)
+        # Move the alarm time forward by the amount indicated by `snooze`:
+        alarm_date = alarm_date + timedelta(seconds=snooze)
+        # TODO: Possibly call synccal --pull here.
+
+        # Generate a new event id for the snooze event that we will be recording:
+        id = time.time()
+
+        # Use the id to record the details of the snooze event to the calendar file:
+        print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
+              f'{alarm_date.hour}:{alarm_date.minute} "{reminder_text}"',
+              file=calfile)
+
+        # TODO: Possibly call synccal --push here.
+        calfile.close()
+        sys.exit(0)
+
+  app = wx.App()
+
+  reminder_text = reminder_text.strip('\"')
+
+  frame = wx.Frame(None, title='mccal reminder')
+  main_panel = wx.Panel(frame)
+  content_panel = wx.Panel(main_panel)
+  message_panel = wx.Panel(content_panel)
+  question_panel = wx.Panel(content_panel)
+  answer_panel = wx.Panel(content_panel)
+  button_panel = wx.Panel(content_panel)
+
+  message = wx.StaticText(message_panel, -1, label = f"{reminder_text}")
+  message_box = wx.BoxSizer(wx.HORIZONTAL)
+  message_box.Add(message)
+  message_panel.SetSizerAndFit(message_box)
+
+  question = wx.StaticText(
+    question_panel,
+    -1,
+    label = "Either click Dismiss to confirm or enter the amount\n"
+    "of time you would like to snooze this alarm for\n"
+    "(<num>[m|h|d])."
+  )
+  question_box = wx.BoxSizer(wx.HORIZONTAL)
+  question_box.Add(question)
+  question_panel.SetSizerAndFit(question_box)
+
+  answer = wx.TextCtrl(
+    answer_panel,
+    value="",
+    style=wx.TE_PROCESS_ENTER,
+    size=(question.GetSize().GetWidth(), 30)
+  )
+  answer.Bind(wx.EVT_TEXT_ENTER, on_answer, answer)
+  answer_box = wx.BoxSizer(wx.HORIZONTAL)
+  answer_box.Add(answer)
+  answer_panel.SetSizerAndFit(answer_box)
+
+  snooze_btn = wx.Button(button_panel, label ="Snooze")
+  dismiss_btn = wx.Button(button_panel, label ="Dismiss")
+  snooze_btn.Bind(wx.EVT_BUTTON, on_snooze, snooze_btn)
+  dismiss_btn.Bind(wx.EVT_BUTTON, on_dismiss, dismiss_btn)
+  button_box = wx.BoxSizer(wx.HORIZONTAL)
+  button_box.Add(snooze_btn)
+  button_box.Add(dismiss_btn)
+  button_panel.SetSizerAndFit(button_box)
+
+  content_box = wx.BoxSizer(wx.VERTICAL)
+  content_box.AddSpacer(12)
+  content_box.Add(message_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(question_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(answer_panel, 0, wx.ALL|wx.ALIGN_LEFT)
+  content_box.AddSpacer(12)
+  content_box.Add(button_panel, 0, wx.ALL|wx.ALIGN_RIGHT)
+  content_box.AddSpacer(8)
+  content_panel.SetSizerAndFit(content_box)
+
+  main_box = wx.BoxSizer(wx.HORIZONTAL)
+  main_box.AddSpacer(12)
+  main_box.Add(content_panel, 0, wx.ALL|wx.ALIGN_CENTER)
+  main_box.AddSpacer(12)
+  main_panel.SetSizerAndFit(main_box)
+
+  frame.Fit()
+  frame.SetMinSize(frame.GetBestSize())
+  frame.Center()
+  frame.Show()
+
+  app.MainLoop()
+  app.Destroy()
 
 
-sub PopupReminderGxmessage {
-    my ($text) = @_;
-    print "\a"; # sound the system bell
-    my $userResponse;
-    my $retVal;
-    my $prog = "gxmessage -bg lightgrey -entry -wrap "
-        . "-buttons \'Snooze:0,Dismiss:1\' "
-        . "-default Snooze -title \'mccal reminder\' "
-        . "\""
-        . "$text \n\n"
-        . "Either click Dismiss to confirm or enter the amount\n"
-        . "of time you would like to snooze this alarm for\n"
-        . "(<num>\[m\|h\|d\])."
-        . "\"";
-    do {
-        $userResponse = `$prog`;
-        $retVal = $?;
-    } while ($retVal == 0
-             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
-                 || $userResponse =~ /^0+[mhd]{0,1}/));
-
-    if ($retVal != 0) {
-        # user pressed the Dismiss button.
-        return 0;
-    }
-    return $userResponse;
-}
+def process_reminder_stdout(reminder_text):
+  # Simply output the reminder_text to STDOUT.
+  print(reminder_text)
 
 
-sub PopupReminderCocoa {
-    my ($text) = @_;
-    print "\a"; # sound the system bell
-    my @userResponse;
-    my $buttonPressed;
-    my $userResponse;
-    my $reminderText = $text;
-    $reminderText =~ s/\"//g;
-    my $prog = "cocoadialog inputbox "
-        . "--button1 Snooze --button2 Dismiss "
-        . "--no-cancel --float --title \'mccal reminder\' --informative-text \""
-        . "$reminderText \n\n"
-        . "Either click Dismiss to confirm or enter the "
-        . "amount of time you would like to snooze this alarm for (<num>\[m\|h\|d\])"
-        . "\"";
-    do {
-        @userResponse = `$prog`;
-        $buttonPressed = @userResponse[0];
-        $userResponse = @userResponse[1];
-    } while ($buttonPressed == 1
-             && ($userResponse !~ /^[0-9]+[mhd]{0,1}$/
-                 || $userResponse =~ /^0+[mhd]{0,1}/));
-
-    if ($buttonPressed == 2) {
-        # user pressed the Dismiss button.
-        return 0;
-    }
-    return $userResponse;
-}
+def write_id_to_processed_events_file(event_id, procfile):
+  print(event_id, file=procfile)
 
 
-sub WriteIdToProcessedEventsFile {
-    my ($idToWrite) = @_;
+def main(calfile, procfile, event_id, reminder_text, text_mode):
+  # TODO: Possibly call synccal --pull here.
+  # Mark the event as processed by writing it to procfile
+  with open(procfile, mode='a') as procfile:
+    write_id_to_processed_events_file(event_id, procfile)
+  # TODO: Possibly call synccal --push here.
 
-    # write the id of the event to the processed events file
-    if (!open(OUTFILE, ">> $processedEventsFilename")) {
-        MailError "cannot open $processedEventsFilename: $!";
-        return 0;
-    }
-
-    print OUTFILE "$idToWrite\n";
-    close OUTFILE;
-}
+  if text_mode:
+    process_reminder_stdout(reminder_text)
+  else:
+    with open(calfile, mode='a') as calfile:
+      process_reminder_ui(reminder_text, event_id, calfile)
 
 
-##############################################################################
-### main code starts here
-### TO CONTROL WHERE THE WINDOW POPS UP USE .Xresources
-
-my ($calFilename, $id, $reminder) = split / /, "@ARGV", 3;
-my ($text, $commands) = split /;/, $reminder, 2; 
-
-# Write the event id to the processed events file. Note that the reason we do
-# this immediately is because if we don't, and the user doesn't either dismiss
-# or snooze the reminder before findappointment enters its next iteration,
-# then findappointment will view the event as unprocessed and pop up another
-# reminder for the same event, and so on and on and on.
-# Before writing, pull the calendar files from the network, and then push them
-# back when done.
-
-if (system("synccal --pull") != 0) {
-    MailError("Could not retrieve remote calendar.");
-}
-
-WriteIdToProcessedEventsFile($id);
-
-if (system("synccal --push") != 0) {
-    MailError("Could not push calendar to remote host.");
-}
-
-# Next thing to do is run all the commands for this reminder:
-my $reminderCommands = $commands;
-while (my ($comm1, $comm2) = split /;/, $reminderCommands, 2) {
-    if (system("$comm1 &") != 0) {
-        die "Error calling $comm1 $!";
-    }
-    $reminderCommands = $comm2;
-}
-
-# now pop up the reminder message:
-my $userResponse = $PopupFunction->($text);
-if (!$userResponse) {
-    # user pressed the Dismiss button.
-    exit 0;
-}
-
-my $snooze;
-# convert user response into seconds
-if ($userResponse =~ /(.*)([mhd])$/) {
-    $snooze = $1;
-    my $timeModifier = $2;
-    if ($timeModifier eq "h") {
-        $snooze *= 3600;
-    }
-    elsif ($timeModifier eq "d") {
-        $snooze *= 86400;
-    }
-    else {
-        $snooze *= 60;
-    }
-}
-else {
-    $snooze = $userResponse *= 60;
-}
-
-# reset the time to current time in case there has been a long delay between
-# user responses
-my $alarmDate = DateTime->now;
-$alarmDate->set_time_zone($timeZone);
-$alarmDate->set(second => 0);
-$alarmDate->add(seconds => $snooze);
-
-# Pull the calendar just in case someone has pushed to while we were waiting for
-# the user response.
-if (system("synccal --pull") != 0) {
-    MailError("Could not retrieve remote calendar.");
-}
-
-open(CALFILE, ">> $calFilename") or die "cannot open $calFilename: $!";
-
-# generate a new event id:
-$id = time;
-
-print CALFILE "SNOOZE ID:$id " . $alarmDate->year . "-" . $alarmDate->month . "-" 
-    . $alarmDate->day . " " . $alarmDate->hour . ":" . $alarmDate->minute . " " 
-    . $text;
-
-if (defined $commands) {
-    print CALFILE ";" . $commands;
-}
-print CALFILE "\n";
-close CALFILE;
-
-# Write to the network file when done writing
-if (system("synccal --push") != 0) {
-    MailError("Could not push calendar to remote host.");
-}
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description="Simple reminder calendar -- remind")
+  parser.add_argument('CALENDAR', help='a calendar file')
+  parser.add_argument('PROC_EVENTS', help='the file where the processed event information will be '
+                      'written to')
+  parser.add_argument('ID', help='the event ID associated with this reminder')
+  parser.add_argument('REMINDER_TEXT', help='the text associated with this reminder')
+  parser.add_argument('-t', '--text_mode', action='store_true',
+                      help='after processing the reminder, output the reminder text to STDOUT '
+                      'and exit, without providing the user with an option to snooze')
+  args = parser.parse_args()
+  main(args.CALENDAR, args.PROC_EVENTS, args.ID, args.REMINDER_TEXT, args.text_mode)

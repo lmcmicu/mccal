@@ -116,7 +116,10 @@ for (;;) {
         # quote the string so the ';'s don't disturb anything
         $textToSend = "\'" . $textToSend . "\'";
 
-        my $command = "remind " . $calFilename . " " . $idToSend . " "
+        my $command = "remind "
+            . $calFilename . " "
+            . $processedEventsFilename . " "
+            . $idToSend . " "
             . $textToSend . " &";
         if (system($command) != 0) {
             MailError("Error calling remind program $!");
