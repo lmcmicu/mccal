@@ -7,7 +7,7 @@ test/output:
 	mkdir -p $@
 
 .PHONY: test
-test: test_code test_remind test_viewcal
+test: test_code test_viewcal test_remind
 
 .PHONY: test_code
 test_code:
@@ -17,19 +17,35 @@ test_code:
 	@echo "Test succeeded!"
 
 calfile := test/test_calendar.txt
-procfile := test/output/test_calendar_processed.txt
+procfile := test/output/remind_test_processed.txt
 
 $(procfile): | test/output
 	touch $@
 
-# TODO: Check the output against some known good output:
+.PHONY: clean_remind
+clean_remind:
+	rm -f $(procfile)
+
 .PHONY: test_remind
-test_remind: | $(procfile)
+test_remind: clean_remind | $(procfile)
+	@echo "Testing remind ..."
 	faketime '2024-03-19 8:00' ./remind -t $(calfile) $(procfile) 1710614701.06092 \
+		"2024-3-19 8:0 Event" > test/output/remind_output.txt
+	diff -q test/expected/remind_expected_output.txt test/output/remind_output.txt
+	diff -q test/expected/remind_expected_processed_file.txt $(procfile)
+	@echo "Test of remind succeeded!"
+
+
+# TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
+# pop up the UI and test it manually.
+.PHONY: test_remind_ui
+test_remind_ui: | $(procfile)
+	faketime '2024-03-19 8:00' ./remind $(calfile) $(procfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event"
 
 .PHONY: test_viewcal
 test_viewcal: | test/output
+	@echo "Testing viewcal ..."
 	faketime '2024-12-31' ./viewcal -f $(calfile) 2024-01-01 > $|/result.txt
 	echo "---TC01 Completed---" >> $|/result.txt
 	faketime '2024-12-31' ./viewcal -f $(calfile) today >> $|/result.txt
@@ -138,8 +154,8 @@ test_viewcal: | test/output
 	echo "---TC53 Completed---" >> $|/result.txt
 	faketime '2024-01-01' ./viewcal -v -f $(calfile) this year >> $|/result.txt
 	echo "---TC54 Completed---" >> $|/result.txt
-	diff -q test/expected/expected.txt $|/result.txt
-	@echo "Test succeeded!"
+	diff -q test/expected/viewcal_expected.txt $|/result.txt
+	@echo "Test of viewcal succeeded!"
 
 clean:
 	rm -Rf test/output

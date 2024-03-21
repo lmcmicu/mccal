@@ -300,7 +300,7 @@ if __name__ == "__main__":
     sys.exit(0)
 
   # Otherwise parse the command line arguments:
-  parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
+  parser = argparse.ArgumentParser(description="Simple reminder calendar -- viewcal")
   parser.add_argument(
     '-f', '--file', metavar='FILE',
     help=f"Use the given calendar file instead of '{default_cal}'"

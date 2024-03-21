@@ -44,7 +44,10 @@ def process_reminder_ui(reminder_text, event_id, calfile):
     else:
       snooze = int(m.groups()[0])
       if snooze < 1:
-        wx.MessageDialog(None, "Cannot snooze for less than 1 minute.").ShowModal()
+        wx.MessageDialog(
+          None,
+          "Sorry but you can't snooze for less than 1 minute. Please try again."
+        ).ShowModal()
       else:
         time_modifier = m.groups()[1] if len(m.groups()) > 1 else "m"
         if time_modifier == "h":
@@ -54,20 +57,25 @@ def process_reminder_ui(reminder_text, event_id, calfile):
         else:
           snooze *= 60
 
-        # Reset the time to current time in case there has been a long delay between user responses:
+        # Reset the base for the alarm time to the current time, since in principle a long time can
+        # have passed between the time that the dialog was first popped up and the time that this
+        # response has been received.
         alarm_date = datetime.today()
         alarm_date = alarm_date.replace(second=0, microsecond=0)
+        # Move the alarm time forward by the amount indicated by `snooze`:
         alarm_date = alarm_date + timedelta(seconds=snooze)
+        # TODO: Possibly call synccal --pull here.
 
-        # Generate a new event id:
+        # Generate a new event id for the snooze event that we will be recording:
         id = time.time()
 
-        # Write the new snooze event to the calendar file:
+        # Use the id to record the details of the snooze event to the calendar file:
         print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
               f'{alarm_date.hour}:{alarm_date.minute} "{reminder_text}"',
               file=calfile)
+
+        # TODO: Possibly call synccal --push here.
         calfile.close()
-        # TODO: Do we still want to call synccal here?
         sys.exit(0)
 
   app = wx.App()
@@ -145,36 +153,21 @@ def process_reminder_ui(reminder_text, event_id, calfile):
   app.Destroy()
 
 
-def process_reminder_email(reminder_text):
-  # TODO. Note that this essentially is going to be what replaces the extra commands that the
-  # original version of mccal used to be able to perform in principle. I only used these for the
-  # first little while and then very quickly stopped finding them useful. (The main thing they
-  # were useful for was for sending an email using mutt or mailx. I thought that was going to be
-  # more important than it was.) In the new version of mccal I still want to support sending an
-  # email when an event comes due in addition to popping up a reminder, but that's all that I want
-  # to support. So this function is going to accept a reminder_text as a parameter and then send
-  # an email with the recipient details looked up in some configuration file.
-  print("The function process_reminder_email() is not yet implemented")
-
 def process_reminder_stdout(reminder_text):
   # Simply output the reminder_text to STDOUT.
   print(reminder_text)
+
 
 def write_id_to_processed_events_file(event_id, procfile):
   print(event_id, file=procfile)
 
 
-def main(calfile, procfile, event_id, reminder_text, text_mode, send_email):
-  # TODO: Are we still going to have a call to synccal here?
-
+def main(calfile, procfile, event_id, reminder_text, text_mode):
+  # TODO: Possibly call synccal --pull here.
   # Mark the event as processed by writing it to procfile
   with open(procfile, mode='a') as procfile:
     write_id_to_processed_events_file(event_id, procfile)
-
-  # TODO: Are we still going to have a call to synccal here?
-
-  if send_email:
-    process_reminder_email(reminder_text)
+  # TODO: Possibly call synccal --push here.
 
   if text_mode:
     process_reminder_stdout(reminder_text)
@@ -184,14 +177,14 @@ def main(calfile, procfile, event_id, reminder_text, text_mode, send_email):
 
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
-  parser.add_argument('CALENDAR', help='A calendar file')
-  parser.add_argument('OUTPUT', help='The file where the processed event will be written to')
-  parser.add_argument('ID', help='The event ID associated with this reminder')
-  parser.add_argument('REMINDER_TEXT', help='The text associated with this reminder')
+  parser = argparse.ArgumentParser(description="Simple reminder calendar -- remind")
+  parser.add_argument('CALENDAR', help='a calendar file')
+  parser.add_argument('PROC_EVENTS', help='the file where the processed event information will be '
+                      'written to')
+  parser.add_argument('ID', help='the event ID associated with this reminder')
+  parser.add_argument('REMINDER_TEXT', help='the text associated with this reminder')
   parser.add_argument('-t', '--text_mode', action='store_true',
-                      help='Output the reminder text to STDOUT without any popups')
-  parser.add_argument('-m', '--mail', action='store_true',
-                      help='Send the reminder text as an email to the configured recipient')
+                      help='after processing the reminder, output the reminder text to STDOUT '
+                      'and exit, without providing the user with an option to snooze')
   args = parser.parse_args()
-  main(args.CALENDAR, args.OUTPUT, args.ID, args.REMINDER_TEXT, args.text_mode, args.mail)
+  main(args.CALENDAR, args.PROC_EVENTS, args.ID, args.REMINDER_TEXT, args.text_mode)
