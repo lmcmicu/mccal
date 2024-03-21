@@ -166,7 +166,8 @@ def main(calfile, procfile, event_id, reminder_text, text_mode, send_email):
   # TODO: Are we still going to have a call to synccal here?
 
   # Mark the event as processed by writing it to procfile
-  write_id_to_processed_events_file(event_id, procfile)
+  with open(procfile, mode='a') as procfile:
+    write_id_to_processed_events_file(event_id, procfile)
 
   # TODO: Are we still going to have a call to synccal here?
 
@@ -176,14 +177,14 @@ def main(calfile, procfile, event_id, reminder_text, text_mode, send_email):
   if text_mode:
     process_reminder_stdout(reminder_text)
   else:
-    process_reminder_ui(reminder_text, event_id, calfile)
+    with open(calfile, mode='a') as calfile:
+      process_reminder_ui(reminder_text, event_id, calfile)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Simple Reminder Calendar")
-  parser.add_argument('CALENDAR', help='A calendar file', type=argparse.FileType('a'))
-  parser.add_argument('OUTPUT', help='The file where the processed event will be written to',
-                      type=argparse.FileType('a'))
+  parser.add_argument('CALENDAR', help='A calendar file')
+  parser.add_argument('OUTPUT', help='The file where the processed event will be written to')
   parser.add_argument('ID', help='The event ID associated with this reminder')
   parser.add_argument('REMINDER_TEXT', help='The text associated with this reminder')
   parser.add_argument('-t', '--text_mode', action='store_true',
