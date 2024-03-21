@@ -26,7 +26,7 @@ I am currently in the process of re-coding **mccal** in python.
 - Download the source code for the [latest stable
   release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) or the [latest
   alpha
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of **mccal** and
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha.1) of **mccal** and
   copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
   `run_findapps.sh`, and `viewcal` to a directory in your executable path
   (e.g., `~/bin/`).
@@ -75,8 +75,7 @@ appointment coming due (in addition to the popup gxmessage).
         Usage:
         viewcal [-f <calendar file>] [<year>|<month>|<week>|<today>|<tomorrow>|<yesterday>|<yyyy-mm-dd>|<yyyy-mm>|<yyyy>]
 
-Note that in the [latest alpha
-release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of
+Note that viewcal's usage will change in 0.2.0. See the release notes for [v0.2.0-alpha](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha) of
 **mccal**, the usage has changed. See the release notes for further information.
 
 ### `run_findapps.sh`
