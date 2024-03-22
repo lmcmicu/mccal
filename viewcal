@@ -306,7 +306,7 @@ if __name__ == "__main__":
   default_cal = f"{str(Path.home())}/.mycalendar.txt"
   # If viewcal is run with no arguments, interpret this as if it were `viewcal today`:
   if len(sys.argv) == 1:
-    main(default_cal, None, "today", False, False, False)
+    main(default_cal, None, "today", False, False, False, False)
     sys.exit(0)
 
   # Otherwise parse the command line arguments:
