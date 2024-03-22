@@ -168,11 +168,6 @@ sub GetUsage {
         $appDate->set(hour=>$hour, minute=>$minute);
         $remind = 0 if (!defined($remind));
 
-        # Pull the calendar files from the network before writing.
-        if (system("synccal --pull") != 0) {
-            die "Could not retrieve remote calendar!";
-        }
-
         PrintDateToFile($appDate, $remind, $text);
 
         if (defined $repeat) {
@@ -202,10 +197,6 @@ sub GetUsage {
             }
         }
 
-        # Save back to the network once writes are done.
-        if (system("synccal --push") != 0) {
-            print STDERR "WARNING: Could not push calendar to remote host.";
-        }
         print "OK\n";
     }
 }

@@ -20,12 +20,6 @@
 use Net::OpenSSH;
 use strict;
 
-# TODO: Make remote mycal optional in a config file
-##########################
-# Temporarily disable:
-exit 0;
-##########################
-
 chomp(my $prog = `basename $0`);
 
 my $cal_file = ".mycalendar.txt";

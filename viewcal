@@ -24,7 +24,10 @@ from datetime import date, timedelta
 from pathlib import Path
 
 
-def get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta):
+def get_events(
+    calendar_file, include_snoozes, include_remind_time, show_id,
+    year, month, day, delta
+):
   with open(calendar_file) as f:
     events = []
     for line in f:
@@ -34,6 +37,7 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
         continue
 
       # Remove the initial portion of the line:
+      event_id = re.sub(r"^(SNOOZE )?ID:(\S+) (\S+).*$", r"\g<2>", line)
       event = re.sub(r"^(SNOOZE )?ID:\S+ ", "", line)
 
       # Remove date and time separators ("/" and ":"):
@@ -87,6 +91,8 @@ def get_events(calendar_file, include_snoozes, include_remind_time, year, month,
             f' {remind_event_year:04}-{remind_event_month:02}-{remind_event_day:02}'
             f' {remind_event_hour:02}:{remind_event_minute:02})'
           )
+        if show_id:
+          event[10] = event[10] + f" (ID: {event_id})"
         events.append(event)
 
     return events
@@ -132,7 +138,10 @@ def format_events(events, verbose):
   return pretty_events
 
 
-def main(calendar_file, modifier, time_period, include_snoozes, include_remind_time, verbose):
+def main(
+    calendar_file, modifier, time_period, include_snoozes, include_remind_time,
+    show_id, verbose
+):
   if m := re.fullmatch(r'(\d{1,4})(-(\d{1,2}))?(-(\d{1,2}))?', time_period):
     year = int(m.groups()[0])
     month = int(m.groups()[2]) if m.groups()[2] is not None else None
@@ -286,7 +295,8 @@ def main(calendar_file, modifier, time_period, include_snoozes, include_remind_t
     print(f"Illegal time period: {time_period}")
     sys.exit(1)
 
-  events = get_events(calendar_file, include_snoozes, include_remind_time, year, month, day, delta)
+  events = get_events(calendar_file, include_snoozes, include_remind_time, show_id,
+                      year, month, day, delta)
   if events:
     events = sort_events(events)
     print('\n'.join(format_events(events, verbose)))
@@ -316,6 +326,11 @@ if __name__ == "__main__":
     action="store_true"
   )
   parser.add_argument(
+    '--show_id',
+    help="Show the event ID of matching events",
+    action="store_true"
+  )
+  parser.add_argument(
     '-v', '--verbose',
     help='Display the events in a somewhat more readable format',
     action='store_true'
@@ -335,5 +350,6 @@ if __name__ == "__main__":
     args.PERIOD.lower(),
     args.all,
     args.reminders,
+    args.show_id,
     args.verbose
   )
