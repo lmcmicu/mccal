@@ -26,7 +26,7 @@ I am currently in the process of re-coding **mccal** in python.
 - Download the source code for the [latest stable
   release](https://github.com/lmcmicu/mccal/releases/tag/v0.1.0) or the [latest
   alpha
-  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha.2) of **mccal** and
+  release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha.3) of **mccal** and
   copy the files `addappointments`, `findappointment`, `remind`, `synccal`,
   `run_findapps.sh`, and `viewcal` to a directory in your executable path
   (e.g., `~/bin/`).
@@ -67,6 +67,9 @@ I am currently in the process of re-coding **mccal** in python.
 
 Note that `command1`, `command2`, etc. are commands to execute upon the
 appointment coming due (in addition to the popup gxmessage).
+
+Note since since v0.2.0-alpha.3, viewcal's usage has changed. See the [release
+notes](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha.3) for more information.
 
 ### `viewcal`
 

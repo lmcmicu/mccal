@@ -7,13 +7,13 @@ test/output:
 	mkdir -p $@
 
 .PHONY: test
-test: test_code test_viewcal test_remind
+test: test_code test_viewcal test_remind test_addappointments
 
 .PHONY: test_code
 test_code:
 	@echo "Cheking code for style and lint ..."
-	pycodestyle --max-line-length=100 --indent-size=2 viewcal
-	flake8 --max-line-length=100 --indent-size=2 viewcal
+	pycodestyle --max-line-length=100 --indent-size=2 viewcal remind addappointments
+	flake8 --max-line-length=100 --indent-size=2 viewcal remind addappointments
 	@echo "Test succeeded!"
 
 calfile := test/test_calendar.txt
@@ -21,6 +21,35 @@ procfile := test/output/remind_test_processed.txt
 
 $(procfile): | test/output
 	touch $@
+
+.PHONY: test_addappointments
+test_addappointments: | test/output
+	@echo "Testing addappointments ..."
+	cp -f $(calfile) $|/
+	echo "8:00 Event" | faketime '2024-08-01' ./addappointments --id 1711146094.6305861 \
+		--calendar $|/test_calendar.txt
+	echo "2024-08-02 10:00 Event" | ./addappointments --id 1711146094.6305862 \
+		--calendar $|/test_calendar.txt
+	echo "remind 15 2024-08-03 10:00 Event" | ./addappointments --id 1711146094.6305863 \
+		--calendar $|/test_calendar.txt
+	echo "weekly 3 2024-08-04 10:00 Event" | ./addappointments --id 1711146094.6305864 \
+		--calendar $|/test_calendar.txt
+	echo "weekly 3 remind 65 2024-08-05 11:00 Event" | ./addappointments --id 1711146094.6305865 \
+		--calendar $|/test_calendar.txt
+	echo "biweekly 3 remind 65 2024-08-06 11:00 Event" | ./addappointments --id 1711146094.6305866 \
+		--calendar $|/test_calendar.txt
+	echo "monthly 3 remind 65 2024-08-07 11:00 Event" | ./addappointments --id 1711146094.6305867 \
+		--calendar $|/test_calendar.txt
+	echo "yearly 3 remind 65 2024-08-08 11:00 Event" | ./addappointments --id 1711146094.6305868 \
+		--calendar $|/test_calendar.txt
+	echo "yearly 3 remind 65 2024-08-38 11:00 Event" | ./addappointments --id 1711146094.6305868 \
+		--calendar $|/test_calendar.txt
+	echo "yearly 3 remind 65 2024-08-08 11:99 Event" | ./addappointments --id 1711146094.6305868 \
+		--calendar $|/test_calendar.txt
+	echo "hogwash" | ./addappointments --id 1711146094.6305868 \
+		--calendar $|/test_calendar.txt
+	diff -q test/expected/addapointments_expected_calendar.txt test/output/test_calendar.txt
+	@echo "Test of addappointments succeeded!"
 
 .PHONY: clean_remind
 clean_remind:
