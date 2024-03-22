@@ -1,202 +1,140 @@
-#!/usr/bin/perl
+#!/usr/bin/env python3
 
 # Copyright 2006-2024 Michael Cuffaro
-# 
+#
 # This file is part of mccal.
-# 
+#
 # mccal is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # mccal is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
-
-## syntax:
-#  [weekly|biweekly|monthly|yearly] [remind <min>] [yyyy-mm-dd] HH:mm [text]
-
-use strict;
-use DateTime;
-use Time::HiRes qw ( time );
-
-my $calFilename = "$ENV{HOME}/.mycalendar.txt";
-chomp (my $timeZone = `cat /etc/timezone`);
-my $DEBUG = 0;
+import argparse
+import re
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
 
 
-sub ValidateDate {
-    my ($year, $month, $day) = @_;
-
-    if ($month < 1 || $month > 12) {
-        print STDERR "Invalid month: $month\n";
-        return 0;
-    }
-    elsif ($month == 1 || $month == 3 ||
-           $month == 5 || $month == 7 ||
-           $month == 8 || $month == 10) {
-        if ($day < 1 || $day > 31) {
-            print STDERR "Invalid date: $year-$month-$day\n";
-            return 0;
-        }
-    }
-    elsif ($month == 2) {
-        if ($day == 29) {
-            if ($year % 4 != 0) {
-                print STDERR "Invalid date: $year-$month-$day\n";
-                return 0;
-            }
-            elsif ($year % 100 == 0 && $year % 400 != 0) {
-                print STDERR "Invalid date: $year-$month-$day\n";
-                return 0;
-            }
-        }
-        elsif ($day < 1 || $day > 28) {
-            print STDERR "Invalid date: $year-$month-$day\n";
-            return 0;
-        }
-    }
-    elsif ($day < 1 || $day > 30) {
-        print STDERR "Invalid date: $year-$month-$day\n";
-        return 0;
-    }
-    return 1;
-}
+def save_appointment(calendar, appdate, remind, text, appt_id):
+  # This assignment makes a copy:
+  alarm = appdate
+  alarm = alarm - timedelta(minutes=int(remind))
+  if appt_id is None:
+    appt_id = time.time()
+  print(
+    f'ID:{appt_id} {alarm.year}-{alarm.month}-{alarm.day} {alarm.hour}:{alarm.minute} '
+    f'"{appdate.year}-{appdate.month}-{appdate.day} {appdate.hour}:{appdate.minute} {text}"',
+    file=calendar
+  )
 
 
-sub ValidateTime {
-    my ($hour, $minute) = @_;
+def main(appointments, calendar, appt_id):
+  for appointment in appointments:
+    appointment = appointment.strip('\n')
 
-    if ($hour < 0 || $hour > 23 ||
-        $minute < 0 || $minute > 59) {
-        print STDERR "Invalid time: $hour:$minute\n";
-        return 0;
-    }
-    return 1;
-}
+    # Parse the next line:
+    matches = re.fullmatch(r"((weekly|biweekly|monthly|yearly)\s+(\d+)\s+){0,1}"
+                           r"(remind\s+(\d+)\s+){0,1}"
+                           r"((\d{1,4})-(\d{1,2})-(\d{1,2})\s+){0,1}"
+                           r"(\d{1,2}):(\d{1,2})"
+                           r"(\s+(([\S\s])*)){0,1}",
+                           appointment)
+    if not matches:
+      print(f"Ignoring appointment with invalid format: '{appointment}'. ", file=sys.stderr)
+      continue
+    matches = matches.groups()
+    repeat, rep_val, remind, year, month, day, hour, minute, text = (
+      matches[1], matches[2], matches[4], matches[6], matches[7],
+      matches[8], matches[9], matches[10], matches[12]
+    )
 
-sub PrintDateToFile {
-    my ($dateToPrint, $remind, $stringarg) = @_;
-    my ($text, $cmd) = split /;/, $stringarg;
+    # Determine the appointment date:
+    if year is None:
+      app_date = datetime.today()
+    else:
+      try:
+        app_date = datetime(year=int(year), month=int(month), day=int(day))
+      except ValueError:
+        print(f"Ignoring appointment with invalid date: {year}-{month}-{day}", file=sys.stderr)
+        continue
+    try:
+      app_date = app_date.replace(hour=int(hour), minute=int(minute))
+    except ValueError:
+        print(f"Ignoring appointment with invalid time: {hour}:{minute}", file=sys.stderr)
+        continue
 
-    my $dateToRing = $dateToPrint->clone;
-    $dateToRing->add(minutes => -$remind);
-    
-    open(CALFILE, ">> $calFilename") or die "cannot open $calFilename: $!";
+    # If no reminder has been provided it defaults to 0:
+    remind = 0 if not remind else remind
 
-    # print an id based on a timestamp
-    print CALFILE "ID:" . time . " ";
+    # Save the appointment and repeat as many times as needed:
+    save_appointment(calendar, app_date, remind, text, appt_id)
+    if repeat == "weekly":
+      for i in range(1, int(rep_val)):
+        app_date = app_date + timedelta(days=7)
+        save_appointment(calendar, app_date, remind, text, appt_id)
+    elif repeat == "biweekly":
+      for i in range(1, int(rep_val)):
+        app_date = app_date + timedelta(days=14)
+        save_appointment(calendar, app_date, remind, text, appt_id)
+    elif repeat == "monthly":
+      for i in range(1, int(rep_val)):
+        app_date = app_date.replace(
+          month=app_date.month+1 if app_date.month != 12 else 1,
+          year=app_date.year+1 if app_date.month == 12 else app_date.year
+        )
+        save_appointment(calendar, app_date, remind, text, appt_id)
+    elif repeat == "yearly":
+      for i in range(1, int(rep_val)):
+        app_date = app_date.replace(year=app_date.year+1)
+        save_appointment(calendar, app_date, remind, text, appt_id)
 
-    print CALFILE
-        $dateToRing->year . "-" . 
-        $dateToRing->month . "-" . 
-        $dateToRing->day . " " .
-        $dateToRing->hour . ":" .
-        $dateToRing->minute . " " .
-        "\"" .
-        $dateToPrint->year . "-" .
-        $dateToPrint->month . "-" .
-        $dateToPrint->day . " " .
-        $dateToPrint->hour . ":" .
-        $dateToPrint->minute . " " .
-        $text .
-        "\"";
-    
-    if (defined($cmd)) {
-        print CALFILE "; $cmd";
-    }
-    print CALFILE "\n";
-    close CALFILE;
-}
+    print("OK")
 
-sub GetUsage {
-    return
-        "Entries must look like: [<weekly|biweekly|monthly|yearly> <N>]\n" .
-        "                        [remind <N>]\n" .
-        "                        [yyyy-mm-dd] HH:mm\n" .
-        "                        [<text>[; command1; command2; ...]]";
-}
 
-###############################################################################
+if __name__ == "__main__":
+  default_cal = f"{str(Path.home())}/.mycalendar.txt"
+  parser = argparse.ArgumentParser(
+    formatter_class=argparse.RawTextHelpFormatter,
+    description=(
+      """Simple reminder calendar -- addappointments
 
-{ ## Main processing starts here
-    if ($ARGV[0] =~ /^(-){1,2}h(elp){0,1}$/) {
-        chomp(my $prog = `basename $0`);
-        print "Usage: $prog [file]\n";
-        print GetUsage() . "\n";
-        exit 1;
-    }
+      Adds the contents of APPOINTMENTS, which contains events specified in the format:
 
-    while (chomp(my $nextLine = <ARGV>)) {
-        next if $nextLine =~ /^\s*([\#]+.*)*\s*$/;  # ignore comments/blanks
-        if ($nextLine !~
-            /^((weekly|biweekly|monthly|yearly)\s+(\d+)\s+){0,1}
-               (remind\s+(\d+)\s+){0,1}
-               ((\d{1,4})-(\d{1,2})-(\d{1,2})\s+){0,1}
-               (\d{1,2}):(\d{1,2})
-               (\s+(([\S\s])*)){0,1}$/x
-            ) {
-            print STDERR GetUsage() . "\n";
-            next;
-        }
+          <weekly|biweekly|monthly|yearly> <N>] [remind <M>] [yyyy-mm-dd] HH:mm [<text>]
 
-        print "1: $1\n2: $2\n3: $3\n4: $4\n5: $5\n6: $6\n7: $7\n" .
-            "8: $8\n9: $9\n10: $10\n11: $11\n12: $12\n13: $13\n" if $DEBUG; 
+          where N indicates how often to repeat the reminder, and M is the number of
+          minutes before the reminder is due to notify the user of it.
 
-        my ($repeat, $repVal, $remind, $year, $month, $day, $hour, $minute, $text) =
-            ($2, $3, $5, $7, $8, $9, $10, $11, $13);
-
-        my $appDate;
-        if (!defined $year) {
-            $appDate = DateTime->now;
-            $appDate->set_time_zone($timeZone);
-            $appDate->set(second => 0);
-        }
-        else {
-            next if (!ValidateDate($year, $month, $day));
-            $appDate = DateTime->new(year=>$year,
-                                     month=>$month,
-                                     day=>$day);
-        }
-
-        next if (!ValidateTime($hour, $minute));
-        $appDate->set(hour=>$hour, minute=>$minute);
-        $remind = 0 if (!defined($remind));
-
-        PrintDateToFile($appDate, $remind, $text);
-
-        if (defined $repeat) {
-            if ($repeat eq "weekly") {
-                for (my $i = 1; $i < $repVal; $i++) {
-                    $appDate->add(weeks=>1);
-                    PrintDateToFile($appDate, $remind, $text);
-                }
-            }
-            if ($repeat eq "biweekly") {
-                for (my $i = 1; $i < $repVal; $i++) {
-                    $appDate->add(weeks=>2);
-                    PrintDateToFile($appDate, $remind, $text);
-                }
-            }
-            elsif ($repeat eq "monthly") {
-                for (my $i = 1; $i < $repVal; $i++) {
-                    $appDate->add(months=>1);
-                    PrintDateToFile($appDate, $remind, $text);
-                }
-            }
-            elsif ($repeat eq "yearly") {
-                for (my $i = 1; $i < $repVal; $i++) {
-                    $appDate->add(years=>1);
-                    PrintDateToFile($appDate, $remind, $text);
-                }
-            }
-        }
-
-        print "OK\n";
-    }
-}
+      to the given CALENDAR.
+      """
+    )
+  )
+  parser.add_argument(
+    '--calendar',
+    type=argparse.FileType('a'),
+    help=f"use the given calendar file instead of '{default_cal}'"
+  )
+  parser.add_argument(
+    '--id',
+    help='use the given ID when saving the appointment instead of generating one randomly'
+  )
+  parser.add_argument(
+    'APPOINTMENTS',
+    nargs='?',
+    type=argparse.FileType('r'),
+    help=('the file from which the appointments are read, or STDIN if ommitted')
+  )
+  args = parser.parse_args()
+  appointments = args.APPOINTMENTS or sys.stdin
+  calendar = args.calendar or default_cal
+  main(appointments, calendar, args.id)
