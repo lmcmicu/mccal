@@ -26,7 +26,7 @@ from pathlib import Path
 
 
 def save_appointment(calendar, appdate, remind, text, appt_id):
-  # This assignment makes a copy:
+  # Assigning a date implies a copy operation:
   alarm = appdate
   alarm = alarm - timedelta(minutes=int(remind))
   if appt_id is None:
@@ -40,9 +40,8 @@ def save_appointment(calendar, appdate, remind, text, appt_id):
 
 def main(appointments, calendar, appt_id):
   for appointment in appointments:
-    appointment = appointment.strip('\n')
-
     # Parse the next line:
+    appointment = appointment.strip('\n')
     matches = re.fullmatch(r"((weekly|biweekly|monthly|yearly)\s+(\d+)\s+){0,1}"
                            r"(remind\s+(\d+)\s+){0,1}"
                            r"((\d{1,4})-(\d{1,2})-(\d{1,2})\s+){0,1}"
@@ -60,43 +59,44 @@ def main(appointments, calendar, appt_id):
 
     # Determine the appointment date:
     if year is None:
-      app_date = datetime.today()
+      appt_date = datetime.today()
     else:
       try:
-        app_date = datetime(year=int(year), month=int(month), day=int(day))
+        appt_date = datetime(year=int(year), month=int(month), day=int(day))
       except ValueError:
         print(f"Ignoring appointment with invalid date: {year}-{month}-{day}", file=sys.stderr)
         continue
     try:
-      app_date = app_date.replace(hour=int(hour), minute=int(minute))
+      appt_date = appt_date.replace(hour=int(hour), minute=int(minute))
     except ValueError:
-        print(f"Ignoring appointment with invalid time: {hour}:{minute}", file=sys.stderr)
-        continue
+      print(f"Ignoring appointment with invalid time: {hour}:{minute}", file=sys.stderr)
+      continue
 
     # If no reminder has been provided it defaults to 0:
-    remind = 0 if not remind else remind
+    remind = remind or 0
 
-    # Save the appointment and repeat as many times as needed:
-    save_appointment(calendar, app_date, remind, text, appt_id)
+    # Save the appointment and then save it again as many times as needed at the proper times:
+    save_appointment(calendar, appt_date, remind, text, appt_id)
+    rep_val = None if not rep_val else int(rep_val)
     if repeat == "weekly":
-      for i in range(1, int(rep_val)):
-        app_date = app_date + timedelta(days=7)
-        save_appointment(calendar, app_date, remind, text, appt_id)
+      for i in range(1, rep_val):
+        appt_date = appt_date + timedelta(days=7)
+        save_appointment(calendar, appt_date, remind, text, appt_id)
     elif repeat == "biweekly":
-      for i in range(1, int(rep_val)):
-        app_date = app_date + timedelta(days=14)
-        save_appointment(calendar, app_date, remind, text, appt_id)
+      for i in range(1, rep_val):
+        appt_date = appt_date + timedelta(days=14)
+        save_appointment(calendar, appt_date, remind, text, appt_id)
     elif repeat == "monthly":
-      for i in range(1, int(rep_val)):
-        app_date = app_date.replace(
-          month=app_date.month+1 if app_date.month != 12 else 1,
-          year=app_date.year+1 if app_date.month == 12 else app_date.year
+      for i in range(1, rep_val):
+        appt_date = appt_date.replace(
+          month=appt_date.month+1 if appt_date.month != 12 else 1,
+          year=appt_date.year+1 if appt_date.month == 12 else appt_date.year
         )
-        save_appointment(calendar, app_date, remind, text, appt_id)
+        save_appointment(calendar, appt_date, remind, text, appt_id)
     elif repeat == "yearly":
-      for i in range(1, int(rep_val)):
-        app_date = app_date.replace(year=app_date.year+1)
-        save_appointment(calendar, app_date, remind, text, appt_id)
+      for i in range(1, rep_val):
+        appt_date = appt_date.replace(year=appt_date.year+1)
+        save_appointment(calendar, appt_date, remind, text, appt_id)
 
     print("OK")
 
