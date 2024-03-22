@@ -60,14 +60,6 @@ for (;;) {
         next;
     }
 
-    if (system("synccal --pull") != 0) {
-        # TODO (Issue #12 in GitHub): we should not do next here but we
-        # should work locally. doing that doesn't work for some reason. fix it.
-        MailError("Could not retrieve remote calendar.");
-        sleep $sleep_val;
-        next;
-    }
-
     if (!open(CALFILE, "< $calFilename")) {
         MailError "cannot open $calFilename: $!";
         sleep $sleep_val;
