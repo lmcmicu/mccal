@@ -136,5 +136,5 @@ if __name__ == "__main__":
   )
   args = parser.parse_args()
   appointments = args.APPOINTMENTS or sys.stdin
-  calendar = args.calendar or default_cal
+  calendar = args.calendar or open(default_cal, mode='a')
   main(appointments, calendar, args.id)
