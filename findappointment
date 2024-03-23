@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env python3
 
 # Copyright 2006-2024 Michael Cuffaro
 # 
@@ -17,106 +17,70 @@
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
-
-BEGIN {
-    push @INC, "/home/mike/lib";
-}
-
-use strict;
-use DateTime;
-use commonfuncs;
+import argparse
+from pathlib import Path
 
 
-my $calFilename = "$ENV{HOME}/.mycalendar.txt";
-my $processedEventsFilename = "$ENV{HOME}/.mycalendar_processed.txt";
-my $pauseFilename = "$ENV{HOME}/.pause_mccal";
-chomp (my $timeZone = `cat /etc/timezone`);
-my $sleep_val = 300;
+def main(calfile, procfile, pausefile_name, sleep_secs, timezone, use_text_mode, send_mail):
+  print(f"calfile: {calfile}, procfile: {procfile}, pausefile_name: {pausefile_name}, "
+        f"sleep_secs: {sleep_secs}, timezone: {timezone}, use_text_mode: {use_text_mode}, "
+        f"send_mail: {send_mail}")
 
 
-sub SearchForID {
-    # searches line by line. Match is by whole line only.
-    my ($stringToCheck) = @_;
 
-    if (!open(INFILE, "< $processedEventsFilename")) {
-        MailError "cannot open $processedEventsFilename: $!";
-        return 0;
-    }
+if __name__ == "__main__":
+  default_calfile = f"{str(Path.home())}/.mycalendar.txt"
+  default_procfile = f"{str(Path.home())}/.mycalendar_processed.txt"
+  default_pausefile = f"{str(Path.home())}/.pause_mccal"
+  default_sleep = 300
+  with open("/etc/timezone", "r") as f:
+    default_tz = f.read().strip('\n')
 
-    while (chomp(my $nextLine = <INFILE>)) {
-        return 1 if $nextLine =~ $stringToCheck;
-    }
+  parser = argparse.ArgumentParser(description="Simple reminder calendar -- findappointment")
+  parser.add_argument(
+    '--cal_file', metavar='FILE',
+    type=argparse.FileType('r'),
+    help=f"read from the calendar FILE instead of from '{default_calfile}'"
+  )
+  parser.add_argument(
+    '--proc_file', metavar='FILE',
+    type=argparse.FileType('r'),
+    help=f"use FILE for writing processed events to instead of '{default_procfile}'"
+  )
+  parser.add_argument(
+    '--pause_file', metavar='FILE',
+    help=(f"use the existence of FILE, instead of '{default_pausefile}', as an indication "
+          "to findappointment that it should postpone any user notifications until the next "
+          "iteration")
+  )
+  parser.add_argument(
+    '--sleep', metavar='N',
+    help=(f"sleep for N seconds, instead of the default {default_sleep}, between "
+          "iterations"),
+    type=int
+  )
+  parser.add_argument(
+    '--timezone',
+    help=f"use TIMEZONE instead of the default for this locale: '{default_tz}'",
+  )
+  parser.add_argument(
+    '--text_mode',
+    help="write all reminder notifications to the console",
+    action='store_true'
+  )
+  parser.add_argument(
+    '--mail',
+    help="send an email to the configured addressee in addition to a notification",
+    action='store_true'
+  )
+  args = parser.parse_args()
 
-    return 0;
-}
-
-
-###################################################################################################
-# main processing starts here
-for (;;) {
-    # If there is a pause file, just sleep and try again later:
-    if (-e $pauseFilename) {
-        sleep $sleep_val;
-        next;
-    }
-
-    if (!open(CALFILE, "< $calFilename")) {
-        MailError "cannot open $calFilename: $!";
-        sleep $sleep_val;
-        next;
-    }
-
-    my $currDate = DateTime->now;
-    $currDate->set_time_zone($timeZone);
-    $currDate->set(second => 0);
-
-    my @reminder_queue;
-    while (chomp(my $nextLine = <CALFILE>)) {
-        next if $nextLine =~ /^\s*([\#]+.*)*\s*$/;  # ignore comments
-        $nextLine =~ s/^SNOOZE (.*)/$1/;   # disregard the snooze marker
-
-        (my $tmpId, my $dom, my $tod, my $text) = split / /, $nextLine, 4;
-        (my $dummy, my $id) = split /:/, $tmpId;
-
-        # keep going if we've already processed this entry
-        next if (SearchForID($id) == 1);
-
-        # possibly put the next entry in the reminder queue
-        (my $year, my $month, my $day) = split /-/, $dom;
-        (my $hour, my $minute) = split /:/, $tod;
-
-        my $appDate = DateTime->new(year => $year,
-                                    month => $month,
-                                    day => $day,
-                                    hour => $hour,
-                                    minute => $minute,
-                                    time_zone => $timeZone);
-        
-        if ($currDate >= $appDate) {
-            # add the text to the reiminder queue along with the event's id:
-            my $idAndTextString = $id . "," . $text;
-            push @reminder_queue, $idAndTextString;
-        }
-    }
-
-    close CALFILE;
-
-    foreach my $reminder (@reminder_queue) {
-        # extract the id:
-        (my $idToSend, my $textToSend) = split /,/, $reminder, 2;
-
-        # quote the string so the ';'s don't disturb anything
-        $textToSend = "\'" . $textToSend . "\'";
-
-        my $command = "remind "
-            . $calFilename . " "
-            . $processedEventsFilename . " "
-            . $idToSend . " "
-            . $textToSend . " &";
-        if (system($command) != 0) {
-            MailError("Error calling remind program $!");
-        }
-    }
-
-    sleep $sleep_val;
-} # end of main loop
+  main(
+    args.cal_file or default_calfile,
+    args.proc_file or default_procfile,
+    args.pause_file or default_pausefile,
+    args.sleep or default_sleep,
+    args.timezone or default_tz,
+    args.text_mode,
+    args.mail
+  )
