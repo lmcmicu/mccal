@@ -30,7 +30,7 @@ test_addappointments: | test/output
 		--calendar $|/test_calendar.txt
 	echo "2024-08-02 10:00 Event" | ./addappointments --id 1711146094.6305862 \
 		--calendar $|/test_calendar.txt
-	echo "remind 15 2024-08-03 10:00 Event" | ./addappointments --id 1711146094.6305863 \
+	echo "remind `getmins 1d` 2024-05-01 10:00 Event" | ./addappointments --id 1711146094.6305863 \
 		--calendar $|/test_calendar.txt
 	echo "weekly 3 2024-08-04 10:00 Event" | ./addappointments --id 1711146094.6305864 \
 		--calendar $|/test_calendar.txt
