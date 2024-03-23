@@ -103,6 +103,7 @@ def main(appointments, calendar, appt_id):
 
 if __name__ == "__main__":
   default_cal = f"{str(Path.home())}/.mycalendar.txt"
+
   parser = argparse.ArgumentParser(
     formatter_class=argparse.RawTextHelpFormatter,
     description=(
