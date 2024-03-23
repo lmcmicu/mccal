@@ -32,7 +32,7 @@ test_code:
 	findapp_addapp
 findappointment_test: findapp_test_text
 
-findapp_test_text: clean_procfile $(procfile) | test/output
+findapp_test_text: clean_procfile | $(procfile)
 	@echo "Testing findappointment in text mode ..."
 	faketime '2023-12-31 8:00' ./findappointment --once --dev --text_mode --cal_file $(calfile) \
 		--proc_file $(procfile) > test/output/findapp_output.txt
@@ -41,8 +41,9 @@ findapp_test_text: clean_procfile $(procfile) | test/output
 
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
-findapp_test_ui:
-	faketime '2024-02-01' ./findappointment --dev --cal_file $(calfile) --proc_file $(procfile)
+findapp_test_ui: | $(procfile)
+	faketime '2024-02-01' ./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) \
+		--sleep 10
 
 findapp_addapp:
 	echo "$$(date +"%H:%M") Event"| ./addappointments --calendar $(calfile)

@@ -36,8 +36,10 @@ def is_processed(event_id, procfile):
   return False
 
 
-def main(calfilename, procfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only,
-         dev_mode):
+def main(
+    calfilename, procfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only,
+    dev_mode
+):
   iterated_once = False
   while True:
     iterated_once = True
@@ -59,6 +61,11 @@ def main(calfilename, procfilename, pausefile_name, sleep_secs, text_mode, send_
       # Parse the rest into four fields:
       event_id, dom, tod, text = next_line.split(' ', maxsplit=3)
       _, event_id = event_id.split(':')
+
+      # Mark it as a dev event if we are running in dev_mode:
+      if dev_mode:
+        text = text.strip('"')
+        text = f'"[DEV] {text}"'
 
       # If the event has already been processed we do not need to do anything:
       if is_processed(event_id, procfile):
