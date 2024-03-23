@@ -126,7 +126,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
     '--id',
-    help='use the given ID when saving the appointment instead of generating one randomly'
+    help='use the given ID when saving the appointments instead of generating one randomly'
   )
   parser.add_argument(
     'APPOINTMENTS',
