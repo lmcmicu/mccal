@@ -36,8 +36,11 @@ def is_processed(event_id, procfile):
   return False
 
 
-def main(calfilename, procfilename, pausefile_name, sleep_secs, use_text_mode, send_mail):
+def main(calfilename, procfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only,
+         dev_mode):
+  iterated_once = False
   while True:
+    iterated_once = True
     # If the pause file is present, then sleep and check again on the next iteration:
     if os.path.isfile(pausefile_name):
       time.sleep(sleep_secs)
@@ -75,17 +78,21 @@ def main(calfilename, procfilename, pausefile_name, sleep_secs, use_text_mode, s
       # Extract the id
       id_to_send, text_to_send = reminder.split(',', maxsplit=1)
 
-      remind_prog = "remind -t" if use_text_mode else "remind"
-      command = f"{remind_prog} {calfile.name} {procfile.name} {id_to_send} {text_to_send} &"
-      if use_text_mode:
+      remind_prog = "remind -t" if text_mode else "remind"
+      remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
+      command = f"{remind_prog} {calfile.name} {procfile.name} {id_to_send} {text_to_send}"
+      if text_mode:
         output = subprocess.run(command, shell=True, capture_output=True)
         print(output.stdout.decode().strip('\n'))
       else:
+        # Run the command in the background:
+        command = f"{command} &"
         output = subprocess.run(command, shell=True)
 
     procfile.close()
     calfile.close()
-    # print(f"Sleeping for {sleep_secs} seconds ...")
+    if once_only and iterated_once:
+      break
     time.sleep(sleep_secs)
 
 
@@ -126,6 +133,17 @@ if __name__ == "__main__":
     help="send an email to the configured addressee in addition to a notification",
     action='store_true'
   )
+  parser.add_argument(
+    '--once',
+    help=('do not iterate; look once through the calendar file for reminders that are due, '
+          'generate notifications, and exit.'),
+    action='store_true'
+  )
+  parser.add_argument(
+    '--dev',
+    help='assume that all other mccal commands are in the working directory',
+    action='store_true'
+  )
   args = parser.parse_args()
 
   main(
@@ -134,5 +152,7 @@ if __name__ == "__main__":
     args.pause_file or default_pausefile,
     args.sleep or default_sleep,
     args.text_mode,
-    args.mail
+    args.mail,
+    args.once,
+    args.dev
   )

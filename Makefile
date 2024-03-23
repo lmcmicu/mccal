@@ -3,13 +3,24 @@ MAKEFLAGS += --warn-undefined-variables
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+command_tests := viewcal_test remind_test addappointments_test findappointment_test
+commands_to_test = $(command_tests:_test=)
+calfile := test/test_calendar.txt
+procfile := test/output/test_processed.txt
+
 test/output:
 	mkdir -p $@
 
-.PHONY: test
-test: test_code test_viewcal test_remind test_addappointments
+$(procfile): | test/output
+	touch $@
 
-commands_to_test := viewcal remind addappointments findappointment
+.PHONY: clean_procfile
+clean_procfile:
+	rm -f $(procfile)
+
+.PHONY: test
+test: test_code $(command_tests)
+
 .PHONY: test_code
 test_code:
 	@echo "Cheking code for style and lint ..."
@@ -17,14 +28,27 @@ test_code:
 	flake8 --max-line-length=100 --indent-size=2 $(commands_to_test)
 	@echo "Test succeeded!"
 
-calfile := test/test_calendar.txt
-procfile := test/output/remind_test_processed.txt
+.PHONY: findappointment_test findapp_test_ui findapp_test_text \
+	findapp_addapp
+findappointment_test: findapp_test_text
 
-$(procfile): | test/output
-	touch $@
+findapp_test_text: clean_procfile $(procfile) | test/output
+	@echo "Testing findappointment in text mode ..."
+	faketime '2023-12-31 8:00' ./findappointment --once --dev --text_mode --cal_file $(calfile) \
+		--proc_file $(procfile) > test/output/findapp_output.txt
+	diff -q test/expected/findapp_expected_output.txt test/output/findapp_output.txt
+	@echo "Test of findappointment succeeded!"
 
-.PHONY: test_addappointments
-test_addappointments: | test/output
+# TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
+# pop up the UI and test it manually.
+findapp_test_ui:
+	faketime '2024-02-01' ./findappointment --dev --cal_file $(calfile) --proc_file $(procfile)
+
+findapp_addapp:
+	echo "$$(date +"%H:%M") Event"| ./addappointments --calendar $(calfile)
+
+.PHONY: addappointments_test
+addappointments_test: | test/output
 	@echo "Testing addappointments ..."
 	cp -f $(calfile) $|/
 	echo "8:00 Event" | faketime '2024-08-01' ./addappointments --id 1711146094.6305861 \
@@ -52,12 +76,8 @@ test_addappointments: | test/output
 	diff -q test/expected/addapointments_expected_calendar.txt test/output/test_calendar.txt
 	@echo "Test of addappointments succeeded!"
 
-.PHONY: clean_remind
-clean_remind:
-	rm -f $(procfile)
-
-.PHONY: test_remind
-test_remind: clean_remind | $(procfile)
+.PHONY: remind_test
+remind_test: clean_procfile | $(procfile)
 	@echo "Testing remind ..."
 	faketime '2024-03-19 8:00' ./remind -t $(calfile) $(procfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event" > test/output/remind_output.txt
@@ -68,13 +88,13 @@ test_remind: clean_remind | $(procfile)
 
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
-.PHONY: test_remind_ui
-test_remind_ui: | $(procfile)
+.PHONY: remind_ui_test
+remind_ui_test: | $(procfile)
 	faketime '2024-03-19 8:00' ./remind $(calfile) $(procfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event"
 
-.PHONY: test_viewcal
-test_viewcal: | test/output
+.PHONY: viewcal_test
+viewcal_test: | test/output
 	@echo "Testing viewcal ..."
 	faketime '2024-12-31' ./viewcal -f $(calfile) 2024-01-01 > $|/result.txt
 	echo "---TC01 Completed---" >> $|/result.txt
