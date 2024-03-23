@@ -1,31 +1,92 @@
 #!/usr/bin/env python3
 
 # Copyright 2006-2024 Michael Cuffaro
-# 
+#
 # This file is part of mccal.
-# 
+#
 # mccal is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # mccal is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with mccal.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
+import os
+import re
+import subprocess
+import time
+from datetime import datetime
 from pathlib import Path
 
 
-def main(calfile, procfile, pausefile_name, sleep_secs, timezone, use_text_mode, send_mail):
-  print(f"calfile: {calfile}, procfile: {procfile}, pausefile_name: {pausefile_name}, "
-        f"sleep_secs: {sleep_secs}, timezone: {timezone}, use_text_mode: {use_text_mode}, "
-        f"send_mail: {send_mail}")
+def is_processed(event_id, procfile):
+  for line in procfile:
+    line = line.strip('\n')
+    if line == event_id:
+      procfile.seek(0)
+      return True
+  procfile.seek(0)
+  return False
 
+
+def main(calfilename, procfilename, pausefile_name, sleep_secs, use_text_mode, send_mail):
+  while True:
+    # If the pause file is present, then sleep and check again on the next iteration:
+    if os.path.isfile(pausefile_name):
+      time.sleep(sleep_secs)
+      continue
+
+    calfile = open(calfilename)
+    procfile = open(procfilename)
+    curr_date = datetime.now()
+    reminder_queue = []
+    for next_line in calfile:
+      next_line = next_line.strip('\n')
+
+      # If the line is prefixed with 'SNOOZE', remove it from the line in memory:
+      next_line = re.sub(r"^(SNOOZE )?", "", next_line)
+
+      # Parse the rest into four fields:
+      event_id, dom, tod, text = next_line.split(' ', maxsplit=3)
+      _, event_id = event_id.split(':')
+
+      # If the event has already been processed we do not need to do anything:
+      if is_processed(event_id, procfile):
+        continue
+
+      # Possibly put the event into the reminder queue:
+      year, month, day = dom.split('-')
+      hour, minute = tod.split(':')
+      appt_date = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour),
+                           minute=int(minute))
+
+      if curr_date >= appt_date:
+        # Add the text to the reminder queue along with the event's ID:
+        reminder_queue.append(f"{event_id},{text}")
+
+    for reminder in reminder_queue:
+      # Extract the id
+      id_to_send, text_to_send = reminder.split(',', maxsplit=1)
+
+      remind_prog = "remind -t" if use_text_mode else "remind"
+      command = f"{remind_prog} {calfile.name} {procfile.name} {id_to_send} {text_to_send} &"
+      if use_text_mode:
+        output = subprocess.run(command, shell=True, capture_output=True)
+        print(output.stdout.decode().strip('\n'))
+      else:
+        output = subprocess.run(command, shell=True)
+
+    procfile.close()
+    calfile.close()
+    # print(f"Sleeping for {sleep_secs} seconds ...")
+    time.sleep(sleep_secs)
 
 
 if __name__ == "__main__":
@@ -33,18 +94,14 @@ if __name__ == "__main__":
   default_procfile = f"{str(Path.home())}/.mycalendar_processed.txt"
   default_pausefile = f"{str(Path.home())}/.pause_mccal"
   default_sleep = 300
-  with open("/etc/timezone", "r") as f:
-    default_tz = f.read().strip('\n')
 
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- findappointment")
   parser.add_argument(
     '--cal_file', metavar='FILE',
-    type=argparse.FileType('r'),
     help=f"read from the calendar FILE instead of from '{default_calfile}'"
   )
   parser.add_argument(
     '--proc_file', metavar='FILE',
-    type=argparse.FileType('r'),
     help=f"use FILE for writing processed events to instead of '{default_procfile}'"
   )
   parser.add_argument(
@@ -58,10 +115,6 @@ if __name__ == "__main__":
     help=(f"sleep for N seconds, instead of the default {default_sleep}, between "
           "iterations"),
     type=int
-  )
-  parser.add_argument(
-    '--timezone',
-    help=f"use TIMEZONE instead of the default for this locale: '{default_tz}'",
   )
   parser.add_argument(
     '--text_mode',
@@ -80,7 +133,6 @@ if __name__ == "__main__":
     args.proc_file or default_procfile,
     args.pause_file or default_pausefile,
     args.sleep or default_sleep,
-    args.timezone or default_tz,
     args.text_mode,
     args.mail
   )

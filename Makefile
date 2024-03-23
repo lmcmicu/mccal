@@ -9,11 +9,12 @@ test/output:
 .PHONY: test
 test: test_code test_viewcal test_remind test_addappointments
 
+commands_to_test := viewcal remind addappointments findappointment
 .PHONY: test_code
 test_code:
 	@echo "Cheking code for style and lint ..."
-	pycodestyle --max-line-length=100 --indent-size=2 viewcal remind addappointments
-	flake8 --max-line-length=100 --indent-size=2 viewcal remind addappointments
+	pycodestyle --max-line-length=100 --indent-size=2 $(commands_to_test)
+	flake8 --max-line-length=100 --indent-size=2 $(commands_to_test)
 	@echo "Test succeeded!"
 
 calfile := test/test_calendar.txt
