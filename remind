@@ -109,7 +109,7 @@ def process_reminder_ui(reminder_text, event_id, calfile):
     answer_panel,
     value="",
     style=wx.TE_PROCESS_ENTER,
-    size=(question.GetSize().GetWidth(), 30)
+    size=(max(message.GetSize().GetWidth(), question.GetSize().GetWidth()), 30)
   )
   answer.Bind(wx.EVT_TEXT_ENTER, on_answer, answer)
   answer_box = wx.BoxSizer(wx.HORIZONTAL)
