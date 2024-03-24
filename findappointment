@@ -63,9 +63,9 @@ def main(
       _, event_id = event_id.split(':')
 
       # Mark it as a dev event if we are running in dev_mode:
-      if dev_mode:
+      if dev_mode and not text.endswith('[DEV]"'):
         text = text.strip('"')
-        text = f'"[DEV] {text}"'
+        text = f'"{text} [DEV]"'
 
       # If the event has already been processed we do not need to do anything:
       if is_processed(event_id, procfile):

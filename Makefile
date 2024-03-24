@@ -14,8 +14,8 @@ test/output:
 $(procfile): | test/output
 	touch $@
 
-.PHONY: clean_procfile
-clean_procfile:
+.PHONY: cleanproc
+cleanproc:
 	rm -f $(procfile)
 
 .PHONY: test
@@ -32,7 +32,7 @@ test_code:
 	findapp_addapp
 findappointment_test: findapp_test_text
 
-findapp_test_text: clean_procfile | $(procfile)
+findapp_test_text: cleanproc | $(procfile)
 	@echo "Testing findappointment in text mode ..."
 	faketime '2023-12-31 8:00' ./findappointment --once --dev --text_mode --cal_file $(calfile) \
 		--proc_file $(procfile) > test/output/findapp_output.txt
@@ -42,7 +42,7 @@ findapp_test_text: clean_procfile | $(procfile)
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
 findapp_test_ui: | $(procfile)
-	faketime '2024-02-01' ./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) \
+	faketime '2023-12-31 8:00' ./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) \
 		--sleep 10
 
 findapp_addapp:
@@ -78,7 +78,7 @@ addappointments_test: | test/output
 	@echo "Test of addappointments succeeded!"
 
 .PHONY: remind_test
-remind_test: clean_procfile | $(procfile)
+remind_test: cleanproc | $(procfile)
 	@echo "Testing remind ..."
 	faketime '2024-03-19 8:00' ./remind -t $(calfile) $(procfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event" > test/output/remind_output.txt
