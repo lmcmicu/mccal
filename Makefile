@@ -42,7 +42,7 @@ findapp_test_text: cleanproc | $(procfile)
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
 findapp_test_ui: | $(procfile)
-	./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) --sleep 30
+	./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) --sleep 10
 
 findapp_addapp:
 	echo "$$(date +"%H:%M") Event"| ./addappointments --calendar $(calfile)
