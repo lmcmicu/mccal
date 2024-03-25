@@ -26,6 +26,7 @@ from datetime import datetime, timedelta
 
 
 global answer
+global reminder_date
 
 
 def process_reminder_ui(reminder_text, event_id, calfile):
@@ -81,6 +82,21 @@ def process_reminder_ui(reminder_text, event_id, calfile):
 
   reminder_text = reminder_text.strip('\"')
 
+  matches = re.match(r'^(\d{1,4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}) (.*)', reminder_text)
+  if not matches:
+    print(f"Could not parse reminder text: '{reminder_text}'")
+    sys.exit(1)
+
+  matches = matches.groups()
+  reminder_time = datetime(
+    year=int(matches[0]),
+    month=int(matches[1]),
+    day=int(matches[2]),
+    hour=int(matches[3]),
+    minute=int(matches[4])
+  )
+  reminder_message = f"{reminder_time.strftime('%A, %B %d %Y %I:%M%p')}\n{matches[5]}"
+
   frame = wx.Frame(None, title='mccal reminder')
   main_panel = wx.Panel(frame)
   content_panel = wx.Panel(main_panel)
@@ -89,7 +105,7 @@ def process_reminder_ui(reminder_text, event_id, calfile):
   answer_panel = wx.Panel(content_panel)
   button_panel = wx.Panel(content_panel)
 
-  message = wx.StaticText(message_panel, -1, label=f"{reminder_text}")
+  message = wx.StaticText(message_panel, -1, label=f"{reminder_message}")
   message_box = wx.BoxSizer(wx.HORIZONTAL)
   message_box.Add(message)
   message_panel.SetSizerAndFit(message_box)
