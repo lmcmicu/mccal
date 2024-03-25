@@ -26,7 +26,6 @@ from datetime import datetime, timedelta
 
 
 global answer
-global reminder_date
 
 
 def process_reminder_ui(reminder_text, event_id, calfile):
