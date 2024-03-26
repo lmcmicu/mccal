@@ -21,12 +21,53 @@ import argparse
 import os
 import re
 import subprocess
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
 
 
 def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only, dev_mode):
+  # Remove any pending events from the calendar file at startup:
+  calfile_contents = []
+  pending_events = set()
+  processed_events = set()
+  with open(calfilename) as calfile:
+    for i, next_line in enumerate(calfile):
+      next_line = next_line.strip('\n')
+      match = re.match(r"^((SNOOZE|PENDING|PROCESSED) )?ID:([0-9\.]+) ", next_line)
+      if not match:
+        print(f"Line {i} has invalid syntax: '{next_line}'", file=sys.stderr)
+        sys.exit(1)
+      match = match.groups()
+
+      directive, event_id = match[1], match[2]
+      calfile_contents.append(next_line)
+      if directive == "PENDING":
+        pending_events.add(event_id)
+      elif directive == "PROCESSED":
+        processed_events.add(event_id)
+
+    incompletes = [
+      event_id for event_id in pending_events if event_id not in processed_events
+    ]
+    if incompletes:
+      # TODO: Also send an email to the administrator about this:
+      print(
+        f"The following reminders were found to be pending but not processed:\n"
+        f"{', '.join(incompletes)}.\n"
+        "No action is required. This is for information only.",
+        file=sys.stderr
+      )
+
+  with open(calfilename, mode='w') as calfile:
+    for line in calfile_contents:
+      match = re.match(r"^((SNOOZE|PENDING|PROCESSED) )?ID:([0-9\.]+) ", line).groups()
+      directive, event_id = match[1], match[2]
+      if directive != "PENDING":
+        print(line, file=calfile)
+
+  # Now iterate:
   iterated_once = False
   while True:
     iterated_once = True

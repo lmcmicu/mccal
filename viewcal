@@ -32,6 +32,11 @@ def get_events(
     events = []
     for line in f:
       line = line.rstrip('\n')
+
+      # Skip pending and already processed events:
+      if line.startswith("PROCESSED ") or line.startswith("PENDING "):
+        continue
+      # Skip snoozed events unless the include_snoozes flag is set:
       snoozed = line.startswith('SNOOZE')
       if not include_snoozes and snoozed:
         continue
