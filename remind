@@ -66,17 +66,19 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
         # Reset the base for the alarm time to the current time, since in principle a long time can
         # have passed between the time that the dialog was first popped up and the time that this
         # response has been received.
-        alarm_date = datetime.today()
+        proc_time = datetime.today()
         # Move the alarm time forward by the amount indicated by `snooze`:
-        alarm_date = alarm_date + timedelta(seconds=snooze)
+        alarm_time = proc_time + timedelta(seconds=snooze)
 
         # Generate a new event id for the snooze event that we will be recording:
-        id = time.time()
+        new_event_id = time.time()
 
         # Use the id to record the details of the snooze event to the calendar file:
         with open(calfile, mode='a') as c:
-          print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
-                f'{alarm_date.hour}:{alarm_date.minute} "{raw_reminder_text}"',
+          print(f'PROCESSED ID:{event_id} {proc_time.year}-{proc_time.month}-{proc_time.day} '
+                f'{proc_time.hour}:{proc_time.minute} "{raw_reminder_text}"', file=c)
+          print(f'SNOOZE ID:{new_event_id} {alarm_time.year}-{alarm_time.month}-{alarm_time.day} '
+                f'{alarm_time.hour}:{alarm_time.minute} "{raw_reminder_text}"',
                 file=c)
 
         sys.exit(0)
