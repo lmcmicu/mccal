@@ -63,20 +63,17 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
         else:
           snooze *= 60
 
-        # Reset the base for the alarm time to the current time, since in principle a long time can
-        # have passed between the time that the dialog was first popped up and the time that this
-        # response has been received.
+        # Determine the processed time for the event.
         proc_time = datetime.today()
-        # Move the alarm time forward by the amount indicated by `snooze`:
+        # The alarm time is the processed time moved forward by the amount indicated by `snooze`:
         alarm_time = proc_time + timedelta(seconds=snooze)
-
         # Generate a new event id for the snooze event that we will be recording:
         new_event_id = time.time()
-
-        # Use the id to record the details of the snooze event to the calendar file:
         with open(calfile, mode='a') as c:
+          # Mark the original event as fully processed:
           print(f'PROCESSED ID:{event_id} {proc_time.year}-{proc_time.month}-{proc_time.day} '
                 f'{proc_time.hour}:{proc_time.minute} "{raw_reminder_text}"', file=c)
+          # Add the new snooze event to the calendar file:
           print(f'SNOOZE ID:{new_event_id} {alarm_time.year}-{alarm_time.month}-{alarm_time.day} '
                 f'{alarm_time.hour}:{alarm_time.minute} "{raw_reminder_text}"',
                 file=c)
@@ -84,9 +81,7 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
         sys.exit(0)
 
   app = wx.App()
-
   raw_reminder_text = raw_reminder_text.strip('\"')
-
   matches = re.match(r'^(\d{1,4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}) (.*)', raw_reminder_text)
   if not matches:
     print(f"Could not parse reminder text: '{raw_reminder_text}'")
@@ -174,17 +169,19 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
 
 
 def main(calfile, event_id, raw_reminder_text, text_mode):
-  # Mark the event as processed by writing it to calfile
+  # Mark the event as pending by writing it to calfile:
   with open(calfile, mode='a') as c:
-    pend_date = datetime.today()
-    print(f'PENDING ID:{event_id} {pend_date.year}-{pend_date.month}-{pend_date.day} '
-          f'{pend_date.hour}:{pend_date.minute} "{raw_reminder_text}"', file=c)
+    pend_time = datetime.today()
+    print(f'PENDING ID:{event_id} {pend_time.year}-{pend_time.month}-{pend_time.day} '
+          f'{pend_time.hour}:{pend_time.minute} "{raw_reminder_text}"', file=c)
 
   if text_mode:
     # Output the raw_reminder_text to STDOUT, and mark the event as processed in the caledar file:
     print(raw_reminder_text)
     with open(calfile, mode='a') as c:
-      print(f'PROCESSED ID:{event_id} "{raw_reminder_text}"', file=c)
+      proc_time = datetime.today()
+      print(f'PROCESSED ID:{event_id} {proc_time.year}-{proc_time.month}-{proc_time.day} '
+            f'{proc_time.hour}:{proc_time.minute} "{raw_reminder_text}"', file=c)
   else:
     process_reminder_ui(raw_reminder_text, event_id, calfile)
 

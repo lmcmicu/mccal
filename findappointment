@@ -28,14 +28,16 @@ from pathlib import Path
 
 
 def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only, dev_mode):
-  # Remove any pending events from the calendar file at startup:
+  # We begin by reading in each line of the calendar file, noting any that in particular
+  # are marked as PENDING or PROCESSED:
   calfile_contents = []
   pending_events = set()
   processed_events = set()
+  directive_pattern = r"^((SNOOZE|PENDING|PROCESSED) )?ID:([0-9\.]+) "
   with open(calfilename) as calfile:
     for i, next_line in enumerate(calfile):
       next_line = next_line.strip('\n')
-      match = re.match(r"^((SNOOZE|PENDING|PROCESSED) )?ID:([0-9\.]+) ", next_line)
+      match = re.match(directive_pattern, next_line)
       if not match:
         print(f"Line {i} has invalid syntax: '{next_line}'", file=sys.stderr)
         sys.exit(1)
@@ -48,29 +50,31 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
       elif directive == "PROCESSED":
         processed_events.add(event_id)
 
+    # If there are any pending events that have not been processed, tell the user about it via
+    # sys.stderr. TODO: Also send an email with the same message.
     incompletes = [
       event_id for event_id in pending_events if event_id not in processed_events
     ]
     if incompletes:
-      # TODO: Also send an email to the administrator about this:
       print(
-        f"The following reminders were found to be pending but not processed:\n"
+        f"The following reminders were found to be incompletely processed:\n"
         f"{', '.join(incompletes)}.\n"
-        "No action is required. This is for information only.",
+        "No action is required. These events will be reprocessed in due course.",
         file=sys.stderr
       )
 
+  # Now write all the lines, other than the pending lines, back to the calendar file.
   with open(calfilename, mode='w') as calfile:
     for line in calfile_contents:
-      match = re.match(r"^((SNOOZE|PENDING|PROCESSED) )?ID:([0-9\.]+) ", line).groups()
+      match = re.match(directive_pattern, line).groups()
       directive, event_id = match[1], match[2]
       if directive != "PENDING":
         print(line, file=calfile)
 
-  # Now iterate:
+  # Startup is complete. We now iterate every `sleep_secs` seconds:
   iterated_once = False
   while True:
-    iterated_once = True
+    iterated_once = iterated_once or True
     # If the pause file is present, then sleep and check again on the next iteration:
     if os.path.isfile(pausefile_name):
       time.sleep(sleep_secs)
@@ -88,11 +92,11 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
       directive = directive[2] if directive else None
       next_line = re.sub(directive_pattern, "", next_line)
 
-      # Parse the rest into four fields:
+      # Parse the rest of the line into four fields:
       event_id, dom, tod, text = next_line.split(' ', maxsplit=3)
       _, event_id = event_id.split(':')
 
-      # Possibly put the event into the reminder queue:
+      # Possibly put the event into the reminder queue, depending on the current time:
       year, month, day = dom.split('-')
       hour, minute = tod.split(':')
       appt_date = datetime(year=int(year), month=int(month), day=int(day), hour=int(hour),
@@ -112,6 +116,8 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
           # Otherwise add it to the reminder queue:
           reminder_queue[f"{event_id}"] = f"{text}"
 
+    # Now that we have gone through the calendar and populated the reminder queue, it is time
+    # to notify the user:
     for (id_to_send, text_to_send) in reminder_queue.items():
       remind_prog = "remind -t" if text_mode else "remind"
       remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
@@ -120,7 +126,7 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
         output = subprocess.run(command, shell=True, capture_output=True)
         print(output.stdout.decode().strip('\n'))
       else:
-        # Run the command in the background:
+        # If this is UI mode, run the remind command in the background:
         command = f"{command} &"
         output = subprocess.run(command, shell=True)
 
@@ -131,18 +137,18 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
 
 
 if __name__ == "__main__":
-  default_calfile = f"{str(Path.home())}/.mycalendar.txt"
-  default_pausefile = f"{str(Path.home())}/.pause_mccal"
+  default_calendar = f"{str(Path.home())}/.mycalendar.txt"
+  default_pause_on = f"{str(Path.home())}/.pause_mccal"
   default_sleep = 300
 
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- findappointment")
   parser.add_argument(
-    '--cal_file', metavar='FILE',
-    help=f"read from the calendar FILE instead of from '{default_calfile}'"
+    '--calendar', metavar='FILE',
+    help=f"read from the calendar FILE instead of from '{default_calendar}'"
   )
   parser.add_argument(
-    '--pause_file', metavar='FILE',
-    help=(f"use the existence of FILE, instead of '{default_pausefile}', as an indication "
+    '--pause_on', metavar='FILE',
+    help=(f"use the existence of FILE, instead of '{default_pause_on}', as an indication "
           "to findappointment that it should postpone any user notifications until the next "
           "iteration")
   )
@@ -176,8 +182,8 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   main(
-    args.cal_file or default_calfile,
-    args.pause_file or default_pausefile,
+    args.calendar or default_calendar,
+    args.pause_on or default_pause_on,
     args.sleep or default_sleep,
     args.text_mode,
     args.mail,

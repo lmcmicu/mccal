@@ -121,7 +121,7 @@ if __name__ == "__main__":
     )
   )
   parser.add_argument(
-    '--calendar',
+    '--calendar', metavar='FILE',
     type=argparse.FileType('a'),
     help=f"use the given calendar file instead of '{default_cal}'"
   )

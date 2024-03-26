@@ -318,7 +318,7 @@ if __name__ == "__main__":
   # Otherwise parse the command line arguments:
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- viewcal")
   parser.add_argument(
-    '-f', '--file', metavar='FILE',
+    '--calendar', metavar='FILE',
     help=f"Use the given calendar file instead of '{default_cal}'"
   )
   parser.add_argument(
@@ -351,7 +351,7 @@ if __name__ == "__main__":
   october, november, december, yyyy-mm-dd, yyyy-mm, yyyy")
   args = parser.parse_args()
   main(
-    args.file or default_cal,
+    args.calendar or default_cal,
     args.MODIFIER.lower() if args.MODIFIER else args.MODIFIER,
     args.PERIOD.lower(),
     args.all,
