@@ -30,6 +30,11 @@ global answer
 
 def process_reminder_ui(raw_reminder_text, event_id, calfile):
   def on_dismiss(_event):
+    # Mark the event as processed in the calendar file:
+    with open(calfile, mode='a') as c:
+      proc_date = datetime.today()
+      print(f'PROCESSED ID:{event_id} {proc_date.year}-{proc_date.month}-{proc_date.day} '
+            f'{proc_date.hour}:{proc_date.minute} "{raw_reminder_text}"', file=c)
     sys.exit(0)
 
   def on_answer(_event):
@@ -62,7 +67,6 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
         # have passed between the time that the dialog was first popped up and the time that this
         # response has been received.
         alarm_date = datetime.today()
-        alarm_date = alarm_date.replace(second=0, microsecond=0)
         # Move the alarm time forward by the amount indicated by `snooze`:
         alarm_date = alarm_date + timedelta(seconds=snooze)
 
@@ -70,11 +74,11 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
         id = time.time()
 
         # Use the id to record the details of the snooze event to the calendar file:
-        print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
-              f'{alarm_date.hour}:{alarm_date.minute} "{raw_reminder_text}"',
-              file=calfile)
+        with open(calfile, mode='a') as c:
+          print(f'SNOOZE ID:{id} {alarm_date.year}-{alarm_date.month}-{alarm_date.day} '
+                f'{alarm_date.hour}:{alarm_date.minute} "{raw_reminder_text}"',
+                file=c)
 
-        calfile.close()
         sys.exit(0)
 
   app = wx.App()
@@ -167,36 +171,29 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
   app.Destroy()
 
 
-def process_reminder_stdout(raw_reminder_text):
-  # Simply output the raw_reminder_text to STDOUT.
-  print(raw_reminder_text)
-
-
-def write_id_to_processed_events_file(event_id, procfile):
-  print(event_id, file=procfile)
-
-
-def main(calfile, procfile, event_id, raw_reminder_text, text_mode):
-  # Mark the event as processed by writing it to procfile
-  with open(procfile, mode='a') as procfile:
-    write_id_to_processed_events_file(event_id, procfile)
+def main(calfile, event_id, raw_reminder_text, text_mode):
+  # Mark the event as processed by writing it to calfile
+  with open(calfile, mode='a') as c:
+    pend_date = datetime.today()
+    print(f'PENDING ID:{event_id} {pend_date.year}-{pend_date.month}-{pend_date.day} '
+          f'{pend_date.hour}:{pend_date.minute} "{raw_reminder_text}"', file=c)
 
   if text_mode:
-    process_reminder_stdout(raw_reminder_text)
+    # Output the raw_reminder_text to STDOUT, and mark the event as processed in the caledar file:
+    print(raw_reminder_text)
+    with open(calfile, mode='a') as c:
+      print(f'PROCESSED ID:{event_id} "{raw_reminder_text}"', file=c)
   else:
-    with open(calfile, mode='a') as calfile:
-      process_reminder_ui(raw_reminder_text, event_id, calfile)
+    process_reminder_ui(raw_reminder_text, event_id, calfile)
 
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- remind")
   parser.add_argument('CALENDAR', help='a calendar file')
-  parser.add_argument('PROC_EVENTS', help='the file where the processed event information will be '
-                      'written to')
   parser.add_argument('ID', help='the event ID associated with this reminder')
   parser.add_argument('REMINDER_TEXT', help='the text associated with this reminder')
   parser.add_argument('-t', '--text_mode', action='store_true',
                       help='after processing the reminder, output the reminder text to STDOUT '
                       'and exit, without providing the user with an option to snooze')
   args = parser.parse_args()
-  main(args.CALENDAR, args.PROC_EVENTS, args.ID, args.REMINDER_TEXT, args.text_mode)
+  main(args.CALENDAR, args.ID, args.REMINDER_TEXT, args.text_mode)

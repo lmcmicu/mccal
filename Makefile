@@ -6,17 +6,9 @@ MAKEFLAGS += --warn-undefined-variables
 command_tests := viewcal_test remind_test addappointments_test findappointment_test
 commands_to_test = $(command_tests:_test=)
 calfile := test/test_calendar.txt
-procfile := test/output/test_processed.txt
 
 test/output:
 	mkdir -p $@
-
-$(procfile): | test/output
-	touch $@
-
-.PHONY: cleanproc
-cleanproc:
-	rm -f $(procfile)
 
 .PHONY: test
 test: test_code $(command_tests)
@@ -32,17 +24,17 @@ test_code:
 	findapp_addapp
 findappointment_test: findapp_test_text
 
-findapp_test_text: cleanproc | $(procfile)
+findapp_test_text: | test/output
 	@echo "Testing findappointment in text mode ..."
 	faketime '2023-12-31 8:00' ./findappointment --once --dev --text_mode --cal_file $(calfile) \
-		--proc_file $(procfile) > test/output/findapp_output.txt
+		> test/output/findapp_output.txt
 	diff -q test/expected/findapp_expected_output.txt test/output/findapp_output.txt
 	@echo "Test of findappointment succeeded!"
 
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
-findapp_test_ui: | $(procfile)
-	./findappointment --dev --cal_file $(calfile) --proc_file $(procfile) --sleep 10
+findapp_test_ui: | test/output
+	./findappointment --dev --cal_file $(calfile) --sleep 10
 
 findapp_addapp:
 	echo "$$(date +"%H:%M") Event"| ./addappointments --calendar $(calfile)
@@ -77,20 +69,19 @@ addappointments_test: | test/output
 	@echo "Test of addappointments succeeded!"
 
 .PHONY: remind_test
-remind_test: cleanproc | $(procfile)
+remind_test: | test/output
 	@echo "Testing remind ..."
-	faketime '2024-03-19 8:00' ./remind -t $(calfile) $(procfile) 1710614701.06092 \
+	faketime '2024-03-19 8:00' ./remind -t $(calfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event" > test/output/remind_output.txt
 	diff -q test/expected/remind_expected_output.txt test/output/remind_output.txt
-	diff -q test/expected/remind_expected_processed_file.txt $(procfile)
 	@echo "Test of remind succeeded!"
 
 
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
 .PHONY: remind_ui_test
-remind_ui_test: | $(procfile)
-	faketime '2024-03-19 8:00' ./remind $(calfile) $(procfile) 1710614701.06092 \
+remind_ui_test: | test/output
+	faketime '2024-03-19 8:00' ./remind $(calfile) 1710614701.06092 \
 		"2024-3-19 8:0 Event"
 
 .PHONY: viewcal_test

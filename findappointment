@@ -26,20 +26,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def is_processed(event_id, procfile):
-  for line in procfile:
-    line = line.strip('\n')
-    if line == event_id:
-      procfile.seek(0)
-      return True
-  procfile.seek(0)
-  return False
-
-
-def main(
-    calfilename, procfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only,
-    dev_mode
-):
+def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only, dev_mode):
   iterated_once = False
   while True:
     iterated_once = True
@@ -49,27 +36,20 @@ def main(
       continue
 
     calfile = open(calfilename)
-    procfile = open(procfilename)
     curr_date = datetime.now()
-    reminder_queue = []
+    reminder_queue = {}
     for next_line in calfile:
       next_line = next_line.strip('\n')
 
-      # If the line is prefixed with 'SNOOZE', remove it from the line in memory:
-      next_line = re.sub(r"^(SNOOZE )?", "", next_line)
+      # If the line begins with a directive, extract it and then remove it from the line:
+      directive_pattern = r"^((SNOOZE|PENDING|PROCESSED) )?"
+      directive = re.match(directive_pattern, next_line)
+      directive = directive[2] if directive else None
+      next_line = re.sub(directive_pattern, "", next_line)
 
       # Parse the rest into four fields:
       event_id, dom, tod, text = next_line.split(' ', maxsplit=3)
       _, event_id = event_id.split(':')
-
-      # Mark it as a dev event if we are running in dev_mode:
-      if dev_mode and not text.endswith('[DEV]"'):
-        text = text.strip('"')
-        text = f'"{text} [DEV]"'
-
-      # If the event has already been processed we do not need to do anything:
-      if is_processed(event_id, procfile):
-        continue
 
       # Possibly put the event into the reminder queue:
       year, month, day = dom.split('-')
@@ -78,16 +58,23 @@ def main(
                            minute=int(minute))
 
       if curr_date >= appt_date:
-        # Add the text to the reminder queue along with the event's ID:
-        reminder_queue.append(f"{event_id},{text}")
+        # Mark it as a dev event if we are running in dev_mode:
+        if dev_mode and not text.endswith('[DEV]"'):
+          text = text.strip('"')
+          text = f'"{text} [DEV]"'
 
-    for reminder in reminder_queue:
-      # Extract the id
-      id_to_send, text_to_send = reminder.split(',', maxsplit=1)
+        # If the directive indicates that this ID is pending or processed, remove it from the
+        # reminder queue:
+        if directive in ["PENDING", "PROCESSED"]:
+          reminder_queue.pop(f"{event_id}", None)
+        else:
+          # Otherwise add it to the reminder queue:
+          reminder_queue[f"{event_id}"] = f"{text}"
 
+    for (id_to_send, text_to_send) in reminder_queue.items():
       remind_prog = "remind -t" if text_mode else "remind"
       remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
-      command = f"{remind_prog} {calfile.name} {procfile.name} {id_to_send} {text_to_send}"
+      command = f"{remind_prog} {calfile.name} {id_to_send} {text_to_send}"
       if text_mode:
         output = subprocess.run(command, shell=True, capture_output=True)
         print(output.stdout.decode().strip('\n'))
@@ -96,7 +83,6 @@ def main(
         command = f"{command} &"
         output = subprocess.run(command, shell=True)
 
-    procfile.close()
     calfile.close()
     if once_only and iterated_once:
       break
@@ -105,7 +91,6 @@ def main(
 
 if __name__ == "__main__":
   default_calfile = f"{str(Path.home())}/.mycalendar.txt"
-  default_procfile = f"{str(Path.home())}/.mycalendar_processed.txt"
   default_pausefile = f"{str(Path.home())}/.pause_mccal"
   default_sleep = 300
 
@@ -113,10 +98,6 @@ if __name__ == "__main__":
   parser.add_argument(
     '--cal_file', metavar='FILE',
     help=f"read from the calendar FILE instead of from '{default_calfile}'"
-  )
-  parser.add_argument(
-    '--proc_file', metavar='FILE',
-    help=f"use FILE for writing processed events to instead of '{default_procfile}'"
   )
   parser.add_argument(
     '--pause_file', metavar='FILE',
@@ -155,7 +136,6 @@ if __name__ == "__main__":
 
   main(
     args.cal_file or default_calfile,
-    args.proc_file or default_procfile,
     args.pause_file or default_pausefile,
     args.sleep or default_sleep,
     args.text_mode,
