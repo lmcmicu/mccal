@@ -21,7 +21,6 @@ import argparse
 import re
 import sys
 import time
-import wx
 from datetime import datetime, timedelta
 
 
@@ -29,6 +28,10 @@ global answer
 
 
 def process_reminder_ui(raw_reminder_text, event_id, calfile):
+  # The import is local to the function here so that python will not complain that wx is not
+  # installed (in the case that it isn't, that is) when remind is running in text mode.
+  import wx
+
   def on_dismiss(_event):
     # Mark the event as processed in the calendar file:
     with open(calfile, mode='a') as c:
