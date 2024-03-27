@@ -6,6 +6,7 @@ MAKEFLAGS += --warn-undefined-variables
 command_tests := viewcal_test remind_test addappointments_test findappointment_test
 commands_to_test = $(command_tests:_test=)
 calfile := test/test_calendar.txt
+admin_email := mike
 
 test/output:
 	mkdir -p $@
@@ -26,7 +27,8 @@ findappointment_test: findapp_test_text
 
 findapp_test_text: | test/output
 	@echo "Testing findappointment in text mode ..."
-	faketime '2023-12-31 8:00' ./findappointment --once --dev --text_mode --calendar $(calfile) \
+	faketime '2023-12-31 8:00' \
+		./findappointment --adm $(admin_email) --once --dev --text_mode --calendar $(calfile) \
 		> test/output/findapp_output.txt
 	diff -q test/expected/findapp_expected_output.txt test/output/findapp_output.txt
 	@echo "Test of findappointment succeeded!"
@@ -34,7 +36,7 @@ findapp_test_text: | test/output
 # TODO: test the UI somehow, possibly using selenium. In the meantime use this recipe to
 # pop up the UI and test it manually.
 findapp_test_ui: | test/output
-	./findappointment --dev --calendar $(calfile) --sleep 10
+	./findappointment --adm $(admin_email) --dev --calendar $(calfile) --sleep 10
 
 findapp_addapp:
 	echo "$$(date +"%H:%M") Event"| ./addappointments --calendar $(calfile)
