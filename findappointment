@@ -21,6 +21,7 @@ import argparse
 import os
 import re
 import subprocess
+import signal
 import sys
 import time
 from datetime import datetime
@@ -217,16 +218,34 @@ if __name__ == "__main__":
   )
   args = parser.parse_args()
 
-  try:
-    main(
-      args.adm or 'root',
-      args.calendar or default_calendar,
-      args.pause_on or default_pause_on,
-      args.sleep or default_sleep,
-      args.text_mode,
-      args.mail,
-      args.once,
-      args.dev
+  adm_email = args.adm or 'root'
+
+  # Set up a handler for various signals:
+  def notify_and_terminate(signum, _):
+    result = subprocess.run(
+      f'echo "findappointment terminated with signal {signum}" |'
+      f'  mail -s "findappointment terminated" {adm_email}',
+      shell=True,
+      capture_output=True
     )
-  except KeyboardInterrupt:
-    pass
+    if result.returncode != 0:
+      print(
+        "Unable to send an email to '{}': {}".format(adm_email, result.stderr.decode().strip('\n')),
+        file=sys.stderr
+      )
+    sys.exit(signum)
+
+  # Bind the handler to the desired signals:
+  signal.signal(signal.SIGINT, notify_and_terminate)
+  signal.signal(signal.SIGTERM, notify_and_terminate)
+
+  main(
+    adm_email,
+    args.calendar or default_calendar,
+    args.pause_on or default_pause_on,
+    args.sleep or default_sleep,
+    args.text_mode,
+    args.mail,
+    args.once,
+    args.dev
+  )
