@@ -27,7 +27,7 @@ from datetime import datetime
 from pathlib import Path
 
 
-def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_only, dev_mode):
+def main(calfilename, pausefile_name, sleep_secs, text_mode, mail_recipient, once_only, dev_mode):
   # We begin by reading in each line of the calendar file, noting any that in particular
   # are marked as PENDING or PROCESSED:
   calfile_contents = []
@@ -120,6 +120,7 @@ def main(calfilename, pausefile_name, sleep_secs, text_mode, send_mail, once_onl
     # to notify the user:
     for (id_to_send, text_to_send) in reminder_queue.items():
       remind_prog = "remind -t" if text_mode else "remind"
+      remind_prog = f"{remind_prog} -m {mail_recipient}" if mail_recipient else remind_prog
       remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
       command = f"{remind_prog} {calfile.name} {id_to_send} {text_to_send}"
       if text_mode:
@@ -159,14 +160,14 @@ if __name__ == "__main__":
     type=int
   )
   parser.add_argument(
-    '--text_mode',
+    '-t', '--text_mode',
     help="write all reminder notifications to the console",
     action='store_true'
   )
   parser.add_argument(
-    '--mail',
-    help="send an email to the configured addressee in addition to a notification",
-    action='store_true'
+    '-m', '--mail', metavar='RECIPIENT',
+    help=("when a reminder becomes due, send an email using 'mail' to RECIPIENT in addition "
+          "to the usual notification"),
   )
   parser.add_argument(
     '--once',
