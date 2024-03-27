@@ -19,6 +19,7 @@
 
 import argparse
 import re
+import subprocess
 import sys
 import time
 from datetime import datetime, timedelta
@@ -85,28 +86,22 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
 
   app = wx.App()
   raw_reminder_text = raw_reminder_text.strip('\"')
-  matches = re.match(r'^(\d{1,4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}) (.*)', raw_reminder_text)
-  if not matches:
-    print(f"Could not parse reminder text: '{raw_reminder_text}'")
-    sys.exit(1)
-
-  matches = matches.groups()
-  reminder_time = datetime(
-    year=int(matches[0]),
-    month=int(matches[1]),
-    day=int(matches[2]),
-    hour=int(matches[3]),
-    minute=int(matches[4])
-  )
-  reminder_message = f"{reminder_time.strftime('%A, %B %d %Y %I:%M%p')}\n{matches[5]}"
+  reminder_time, reminder_message = split_reminder(raw_reminder_text)
 
   frame = wx.Frame(None, title='mccal reminder')
   main_panel = wx.Panel(frame)
   content_panel = wx.Panel(main_panel)
+  timestring_panel = wx.Panel(content_panel)
   message_panel = wx.Panel(content_panel)
   question_panel = wx.Panel(content_panel)
   answer_panel = wx.Panel(content_panel)
   button_panel = wx.Panel(content_panel)
+
+  timestring = reminder_time.strftime('%A, %B %d %Y %I:%M%p')
+  timestring = wx.StaticText(timestring_panel, -1, label=f"{timestring}")
+  timestring_box = wx.BoxSizer(wx.HORIZONTAL)
+  timestring_box.Add(timestring)
+  timestring_panel.SetSizerAndFit(timestring_box)
 
   message = wx.StaticText(message_panel, -1, label=f"{reminder_message}")
   message_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -128,7 +123,10 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
     answer_panel,
     value="",
     style=wx.TE_PROCESS_ENTER,
-    size=(max(message.GetSize().GetWidth(), question.GetSize().GetWidth()), 30)
+    size=(max(timestring.GetSize().GetWidth(),
+              message.GetSize().GetWidth(),
+              question.GetSize().GetWidth()),
+          30)
   )
   answer.Bind(wx.EVT_TEXT_ENTER, on_answer, answer)
   answer_box = wx.BoxSizer(wx.HORIZONTAL)
@@ -146,6 +144,7 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
 
   content_box = wx.BoxSizer(wx.VERTICAL)
   content_box.AddSpacer(12)
+  content_box.Add(timestring_panel, 0, wx.ALL | wx.ALIGN_LEFT)
   content_box.Add(message_panel, 0, wx.ALL | wx.ALIGN_LEFT)
   content_box.AddSpacer(12)
   content_box.Add(question_panel, 0, wx.ALL | wx.ALIGN_LEFT)
@@ -171,12 +170,44 @@ def process_reminder_ui(raw_reminder_text, event_id, calfile):
   app.Destroy()
 
 
-def main(calfile, event_id, raw_reminder_text, text_mode):
+def split_reminder(raw_reminder_text):
+  matches = re.match(r'^(\d{1,4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}) (.*)', raw_reminder_text)
+  if not matches:
+    print(f"Could not parse reminder text: '{raw_reminder_text}'")
+    sys.exit(1)
+
+  matches = matches.groups()
+  reminder_time = datetime(
+    year=int(matches[0]),
+    month=int(matches[1]),
+    day=int(matches[2]),
+    hour=int(matches[3]),
+    minute=int(matches[4])
+  )
+  return reminder_time, matches[5]
+
+
+def main(calfile, event_id, raw_reminder_text, text_mode, recipient):
   # Mark the event as pending by writing it to calfile:
   with open(calfile, mode='a') as c:
     pend_time = datetime.today()
     print(f'PENDING ID:{event_id} {pend_time.year}-{pend_time.month}-{pend_time.day} '
           f'{pend_time.hour}:{pend_time.minute} "{raw_reminder_text}"', file=c)
+
+  if recipient:
+    reminder_time, reminder_message = split_reminder(raw_reminder_text)
+    reminder_time = reminder_time.strftime('%A, %B %d %Y %I:%M%p')
+    result = subprocess.run(
+      f'echo "{reminder_time}\n{reminder_message}" |'
+      f'  mail -s "Reminder for {reminder_time}" {recipient}',
+      shell=True,
+      capture_output=True
+    )
+    if result.returncode != 0:
+      print(
+        "Unable to send an email to '{}': {}".format(recipient, result.stderr.decode().strip('\n')),
+        file=sys.stderr
+      )
 
   if text_mode:
     # Output the raw_reminder_text to STDOUT, and mark the event as processed in the caledar file:
@@ -194,8 +225,15 @@ if __name__ == "__main__":
   parser.add_argument('CALENDAR', help='a calendar file')
   parser.add_argument('ID', help='the event ID associated with this reminder')
   parser.add_argument('REMINDER_TEXT', help='the text associated with this reminder')
-  parser.add_argument('-t', '--text_mode', action='store_true',
-                      help='after processing the reminder, output the reminder text to STDOUT '
-                      'and exit, without providing the user with an option to snooze')
+  parser.add_argument(
+    '-t', '--text_mode', action='store_true',
+    help='after processing the reminder, output the reminder text to STDOUT '
+    'and exit, without providing the user with an option to snooze'
+  )
+  parser.add_argument(
+    '-m', '--mail', metavar='RECIPIENT',
+    help="use the program 'mail' to send the reminder text as an email to the given recipient "
+    "in addition to notifying the user that the reminder is due"
+  )
   args = parser.parse_args()
-  main(args.CALENDAR, args.ID, args.REMINDER_TEXT, args.text_mode)
+  main(args.CALENDAR, args.ID, args.REMINDER_TEXT, args.text_mode, args.mail)
