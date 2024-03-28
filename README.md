@@ -34,8 +34,6 @@ popup. **mccal** uses [wxPython](https://wxpython.org/) to implement its
 
 ## Using **mccal**
 
-### Examples
-
 <table border="1" style="margin-left: auto; margin-right: auto;">
 <tr>
     <td>
@@ -44,6 +42,7 @@ popup. **mccal** uses [wxPython](https://wxpython.org/) to implement its
 </tr>
 </table>
 
+### Examples
 
 ```
 $ viewcal
