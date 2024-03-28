@@ -46,9 +46,23 @@ you may install wxPython by running
   - `unpause_mccal`
   - `run_findapps.sh`
 
-- Optional: customise your window manager to run `run_findapps.sh` at
-  startup. This is a wrapper around the daemon `findappointment` that kills any
-  existing findappointment processes before starting up a new daemon.
+To start **mccal**, simply run
+
+    $ findappointment &
+    
+in a terminal window. (If you want to avoid inadvertend termination, prefacing
+the command with
+[nohup](https://www.man7.org/linux/man-pages/man1/nohup.1.html) is recommended.)
+
+### Optional:
+
+The shell script, `run_findapps.sh`, is a wrapper around the `findappointment`
+daemon that first kills any existing `findappointment` processes before starting
+up a new daemon process. It is recommended that you customize your window
+manager's initialization script to automatically run `run_findapps.sh` in the
+background at startup. 
+
+This is a wrapper around the daemon `findappointment` that 
 
 ## Using **mccal**
 
