@@ -319,36 +319,40 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- viewcal")
   parser.add_argument(
     '--calendar', metavar='FILE',
-    help=f"Use the given calendar file instead of '{default_cal}'"
+    help=f"use the given calendar file instead of '{default_cal}'"
   )
   parser.add_argument(
     '-a', '--all',
-    help='Also show snoozed events that will trigger reminders during the given PERIOD',
+    help='also show snoozed events that will trigger reminders during the given PERIOD',
     action="store_true"
   )
   parser.add_argument(
     '-r', '--reminders',
-    help='Show the date and time at which the reminder for a given event will be triggered',
+    help='show the date and time at which the reminder for a given event will be triggered',
     action="store_true"
   )
   parser.add_argument(
     '--show_id',
-    help="Show the event ID of matching events",
+    help="show the event ID of matching events",
     action="store_true"
   )
   parser.add_argument(
     '-v', '--verbose',
-    help='Display the events in a somewhat more readable format',
+    help='display the events in a somewhat more readable format',
     action='store_true'
   )
   parser.add_argument(
     'MODIFIER', choices=['this', 'next', 'last'], nargs='?',
-    help="If left unspecified, defaults to 'this'. Show the events for this PERIOD, the next \
-    PERIOD, or the last PERIOD, respectively.")
-  parser.add_argument('PERIOD', help="If left unspecified, defaults to 'today'. Can be one of: \
-  year, month, week, monday, tuesday, wednesday, thursday, friday, saturday, sunday, today, \
-  tomorrow, yesterday, january, february, march, april, may, june, july, august, september, \
-  october, november, december, yyyy-mm-dd, yyyy-mm, yyyy")
+    help="(if left unspecified, defaults to 'this'); show the events for this PERIOD, the next \
+    PERIOD, or the last PERIOD, respectively."
+  )
+  parser.add_argument(
+    'PERIOD',
+    help="(if left unspecified, defaults to 'today'); can be one of: \
+    year, month, week, monday, tuesday, wednesday, thursday, friday, saturday, sunday, today, \
+    tomorrow, yesterday, january, february, march, april, may, june, july, august, september, \
+    october, november, december, yyyy-mm-dd, yyyy-mm, yyyy"
+  )
   args = parser.parse_args()
   main(
     args.calendar or default_cal,

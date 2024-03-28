@@ -44,6 +44,11 @@ def notify_admin(addr, subject, body):
 
 def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_recipient, once_only,
          dev_mode):
+  if not os.path.isfile(calfilename):
+    with open(calfilename, mode='w'):
+      notify_admin(adm_addr, "findappointment initialised a new calendar file",
+                   "No action is required. This is for information only.")
+
   # We begin by reading in each line of the calendar file, noting any that in particular
   # are marked as PENDING or PROCESSED:
   calfile_contents = []
@@ -174,7 +179,7 @@ if __name__ == "__main__":
   default_adm_email = 'root'
   parser.add_argument(
     '--adm', metavar='ADDR',
-    help=("(defaults to '{default_adm_email}' if unspecified) the email address of the "
+    help=(f"(defaults to '{default_adm_email}' if unspecified) the email address of the "
           "administrator to send an email to in the case of an error. Note that, regardless of "
           "this value, error messages will always also be written to STDERR")
   )
@@ -199,7 +204,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
     '-t', '--text_mode',
-    help="write all reminder notifications to the console",
+    help="write all reminder notifications to the console without any popups",
     action='store_true'
   )
   parser.add_argument(
@@ -215,7 +220,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
     '--dev',
-    help='assume that all other mccal commands are in the working directory',
+    help='assume that all other mccal commands are located in the current working directory',
     action='store_true'
   )
   args = parser.parse_args()

@@ -117,7 +117,7 @@ if __name__ == "__main__":
           <weekly|biweekly|monthly|yearly> <N>] [remind <M>] [yyyy-mm-dd] HH:mm [<text>]
 
           where N indicates how often to repeat the reminder, and M is the number of
-          minutes before the reminder is due to notify the user of it.
+          minutes before the reminder is due to notify the user of it,
 
       to the given CALENDAR.
       """
@@ -131,7 +131,7 @@ if __name__ == "__main__":
   )
   parser.add_argument(
     '--id',
-    help='use the given ID when saving the appointments instead of generating one randomly'
+    help='use the given ID to identify new events instead of generating IDs randomly'
   )
   parser.add_argument(
     'APPOINTMENTS',
