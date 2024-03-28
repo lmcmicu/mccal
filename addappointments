@@ -76,34 +76,37 @@ def main(appointments, calendar, appt_id):
     remind = remind or 0
 
     # Save the appointment and then save it again as many times as needed at the proper times:
-    save_appointment(calendar, appt_date, remind, text, appt_id)
+    this_appt_id = f"{appt_id}0" if appt_id else None
+    save_appointment(calendar, appt_date, remind, text, this_appt_id)
     rep_val = None if not rep_val else int(rep_val)
     if repeat == "weekly":
       for i in range(1, rep_val):
         appt_date = appt_date + timedelta(days=7)
-        save_appointment(calendar, appt_date, remind, text, appt_id)
+        this_appt_id = f"{appt_id}{i}" if appt_id else None
+        save_appointment(calendar, appt_date, remind, text, this_appt_id)
     elif repeat == "biweekly":
       for i in range(1, rep_val):
         appt_date = appt_date + timedelta(days=14)
-        save_appointment(calendar, appt_date, remind, text, appt_id)
+        this_appt_id = f"{appt_id}{i}" if appt_id else None
+        save_appointment(calendar, appt_date, remind, text, this_appt_id)
     elif repeat == "monthly":
       for i in range(1, rep_val):
         appt_date = appt_date.replace(
           month=appt_date.month+1 if appt_date.month != 12 else 1,
           year=appt_date.year+1 if appt_date.month == 12 else appt_date.year
         )
-        save_appointment(calendar, appt_date, remind, text, appt_id)
+        this_appt_id = f"{appt_id}{i}" if appt_id else None
+        save_appointment(calendar, appt_date, remind, text, this_appt_id)
     elif repeat == "yearly":
       for i in range(1, rep_val):
         appt_date = appt_date.replace(year=appt_date.year+1)
-        save_appointment(calendar, appt_date, remind, text, appt_id)
+        this_appt_id = f"{appt_id}{i}" if appt_id else None
+        save_appointment(calendar, appt_date, remind, text, this_appt_id)
 
     print("OK")
 
 
 if __name__ == "__main__":
-  default_cal = f"{str(Path.home())}/.mycalendar.txt"
-
   parser = argparse.ArgumentParser(
     formatter_class=argparse.RawTextHelpFormatter,
     description=(
@@ -120,6 +123,7 @@ if __name__ == "__main__":
       """
     )
   )
+  default_cal = f"{str(Path.home())}/.mycalendar.txt"
   parser.add_argument(
     '--calendar', metavar='FILE',
     type=argparse.FileType('a'),

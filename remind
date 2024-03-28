@@ -231,9 +231,9 @@ if __name__ == "__main__":
     'and exit, without providing the user with an option to snooze'
   )
   parser.add_argument(
-    '-m', '--mail', metavar='RECIPIENT',
-    help="use the program 'mail' to send the reminder text as an email to the given recipient "
-    "in addition to notifying the user that the reminder is due"
+    '-m', '--mail', metavar='ADDR',
+    help="use the program 'mail' to send the reminder text as an email to the given email "
+    "address in addition to notifying the user that the reminder is due"
   )
   args = parser.parse_args()
   main(args.CALENDAR, args.ID, args.REMINDER_TEXT, args.text_mode, args.mail)

@@ -28,12 +28,10 @@ from datetime import datetime
 from pathlib import Path
 
 
-def report_error(addr, error):
-  error_msg = f"findappointment encountered the following error:\n---\n{error}"
-  print(error_msg, file=sys.stderr)
+def notify_admin(addr, subject, body):
+  print(f"{subject}: {body}", file=sys.stderr)
   result = subprocess.run(
-    f'echo "{error_msg}" |'
-    f'  mail -s "findappointment has encountered an error" {addr}',
+    f'echo "{body}" | mail -s "{subject}" {addr}',
     shell=True,
     capture_output=True
   )
@@ -70,17 +68,18 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
           processed_events.add(event_id)
 
       # If there are any pending events that have not been processed, tell the user about it via
-      # sys.stderr. TODO: Also send an email with the same message.
+      # sys.stderr and by email:
       incompletes = [
         event_id for event_id in pending_events if event_id not in processed_events
       ]
       if incompletes:
-        print(
+        message = (
           f"The following reminders were found to be incompletely processed:\n"
           f"{', '.join(incompletes)}.\n"
-          "No action is required. These events will be reprocessed in due course.",
-          file=sys.stderr
+          "No action is required. These events will be reprocessed in due course."
         )
+        print(message, file=sys.stderr)
+        notify_admin(adm_addr, "findappointment found incompletely processed events", message)
 
     # Now write all the lines, other than the pending lines, back to the calendar file.
     with open(calfilename, mode='w') as calfile:
@@ -90,7 +89,7 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
         if directive != "PENDING":
           print(line, file=calfile)
   except Exception as e:
-    report_error(adm_addr, e)
+    notify_admin(adm_addr, "findappointment encountered an error", e)
     sys.exit(1)
 
   # Startup is complete. We now iterate every `sleep_secs` seconds:
@@ -103,6 +102,7 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
         time.sleep(sleep_secs)
         continue
 
+      # Open the calendar file and get the current date:
       calfile = open(calfilename)
       curr_date = datetime.now()
       reminder_queue = {}
@@ -141,11 +141,11 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
 
       # Now that we have gone through the calendar and populated the reminder queue, it is time
       # to notify the user:
-      for (id_to_send, text_to_send) in reminder_queue.items():
+      for (event_id, message) in reminder_queue.items():
         remind_prog = "remind -t" if text_mode else "remind"
         remind_prog = f"{remind_prog} -m {mail_recipient}" if mail_recipient else remind_prog
         remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
-        command = f"{remind_prog} {calfile.name} {id_to_send} {text_to_send}"
+        command = f"{remind_prog} {calfile.name} {event_id} {message}"
         if text_mode:
           result = subprocess.run(command, shell=True, capture_output=True)
           if result.returncode != 0:
@@ -155,12 +155,14 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
           # If this is UI mode, run the remind command in the background:
           command = f"{command} &"
           result = subprocess.run(command, shell=True)
+          # This isn't the process's final exit code since it is now running in the background,
+          # but hopefully if there are problems even starting they will be reflected here:
           if result.returncode != 0:
             raise Exception(result.stderr.decode().strip('\n'))
-
+      # Close the calendar for this iteration:
       calfile.close()
     except Exception as e:
-      report_error(adm_addr, e)
+      notify_admin(adm_addr, "findappointment encountered an error", e)
 
     if once_only and iterated_once:
       break
@@ -168,27 +170,27 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
 
 
 if __name__ == "__main__":
-  default_calendar = f"{str(Path.home())}/.mycalendar.txt"
-  default_pause_on = f"{str(Path.home())}/.pause_mccal"
-  default_sleep = 300
-
   parser = argparse.ArgumentParser(description="Simple reminder calendar -- findappointment")
+  default_adm_email = 'root'
   parser.add_argument(
     '--adm', metavar='ADDR',
-    help=("(defaults to 'root' if unspecified) the email address of the administrator to send an "
-          "email to in the case of an error. Note that, regardless of this value, error messages "
-          "will always also be written to STDERR")
+    help=("(defaults to '{default_adm_email}' if unspecified) the email address of the "
+          "administrator to send an email to in the case of an error. Note that, regardless of "
+          "this value, error messages will always also be written to STDERR")
   )
+  default_calendar = f"{str(Path.home())}/.mycalendar.txt"
   parser.add_argument(
     '--calendar', metavar='FILE',
     help=f"read from the calendar FILE instead of from '{default_calendar}'"
   )
+  default_pause_on = f"{str(Path.home())}/.pause_mccal"
   parser.add_argument(
     '--pause_on', metavar='FILE',
     help=(f"use the existence of FILE, instead of '{default_pause_on}', as an indication "
           "to findappointment that it should postpone any user notifications until the next "
           "iteration")
   )
+  default_sleep = 300
   parser.add_argument(
     '--sleep', metavar='N',
     help=(f"sleep for N seconds, instead of the default {default_sleep}, between "
@@ -218,24 +220,19 @@ if __name__ == "__main__":
   )
   args = parser.parse_args()
 
-  adm_email = args.adm or 'root'
+  adm_email = args.adm or default_adm_email
 
   # Set up a handler for various signals:
   def notify_and_terminate(signum, _):
-    result = subprocess.run(
-      f'echo "findappointment terminated with signal {signum}" |'
-      f'  mail -s "findappointment terminated" {adm_email}',
-      shell=True,
-      capture_output=True
+    notify_admin(
+      adm_email,
+      "findappointment terminated",
+      f"findappointment received signal '{signal.strsignal(signum)}' and was terminated."
     )
-    if result.returncode != 0:
-      print(
-        "Unable to send an email to '{}': {}".format(adm_email, result.stderr.decode().strip('\n')),
-        file=sys.stderr
-      )
     sys.exit(signum)
 
   # Bind the handler to the desired signals:
+  signal.signal(signal.SIGHUP, notify_and_terminate)
   signal.signal(signal.SIGINT, notify_and_terminate)
   signal.signal(signal.SIGTERM, notify_and_terminate)
 
