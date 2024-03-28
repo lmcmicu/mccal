@@ -34,7 +34,16 @@ popup. **mccal** uses [wxPython](https://wxpython.org/) to implement its
 
 ## Using **mccal**
 
-### Examples and screenshots
+### Examples
+
+<table border="1" style="margin-left: auto; margin-right: auto;">
+<tr>
+    <td>
+    <img alt="Screenshot of an mccal reminder popop" src="mccal_reminder.png" />
+    </td>
+</tr>
+</table>
+
 
 ```
 $ viewcal
@@ -74,14 +83,6 @@ $ viewcal saturday
 2024-03-30 00:01 Barbara birthday
 2024-03-30 12:00 Lunch with Nancy
 ```
-
-<table border="1" style="margin-left: auto; margin-right: auto;">
-<tr>
-    <td>
-    <img alt="Screenshot of an mccal reminder popop" src="mccal_reminder.png" />
-    </td>
-</tr>
-</table>
 
 ### Reference
 
