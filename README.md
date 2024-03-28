@@ -1,5 +1,13 @@
 # **mccal**: a simple reminder calendar
 
+<table border="1" style="margin-left: auto; margin-right: auto;">
+<tr>
+    <td>
+    <img alt="Screenshot of an mccal reminder popop" src="mccal_reminder.png" />
+    </td>
+</tr>
+</table>
+
 **mccal** is mainly useful for giving you reminders, which
 you can snooze, as often as you like, for however many minutes, hours, or
 days that you would like. When I originally wrote **mccal** in the mid 2000s,
@@ -10,7 +18,10 @@ When an appointment becomes due, the program will pop up a window with the
 appointment text, which you can then dismiss or snooze as desired. The
 program also allows you to optionally send an email in addition to a
 popup. **mccal** uses [wxPython](https://wxpython.org/) to implement its
-(pretty basic) UI.
+(pretty basic) UI. If you are using [Debian GNU/Linux](https://www.debian.org/)
+you may install wxPython by running
+
+    sudo apt install wxpython-tools
 
 ## Requirements
 
@@ -24,23 +35,22 @@ popup. **mccal** uses [wxPython](https://wxpython.org/) to implement its
   alpha
   release](https://github.com/lmcmicu/mccal/releases/tag/v0.2.0-alpha.4) of
   **mccal** and
-  copy the files `addappointments`, `findappointment`, `remind`, `getmins`,
-  `pause_mccal`, `run_findapps.sh`, and `viewcal` to a directory in your
-  executable path (e.g., `~/bin/`).
+  copy the folling files to a directory in your executable path (usually
+  `~/bin/`):
+  - `addappointments`
+  - `findappointment`
+  - `remind`
+  - `viewcal`
+  - `getmins`
+  - `pause_mccal`
+  - `unpause_mccal`
+  - `run_findapps.sh`
 
 - Optional: customise your window manager to run `run_findapps.sh` at
   startup. This is a wrapper around the daemon `findappointment` that kills any
   existing findappointment processes before starting up a new daemon.
 
 ## Using **mccal**
-
-<table border="1" style="margin-left: auto; margin-right: auto;">
-<tr>
-    <td>
-    <img alt="Screenshot of an mccal reminder popop" src="mccal_reminder.png" />
-    </td>
-</tr>
-</table>
 
 ### Examples
 
