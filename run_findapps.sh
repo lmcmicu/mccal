@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Copyright 2006-2024 Michael Cuffaro
+# Copyright 2014-2016 Michael Cuffaro
 # 
 # This file is part of mccal.
 # 
@@ -20,8 +20,9 @@
 
 export PATH=/home/mike/bin:$PATH
 
-killall findappointment
+for pid in $(ps -ef|grep findappointment |awk '{if ($8 == "python3") print $2}')
+do
+	kill $pid
+done
 
-findappointment
-
-mailme findappointment terminated
+findappointment --adm mike
