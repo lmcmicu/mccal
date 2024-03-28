@@ -3,10 +3,39 @@ MAKEFLAGS += --warn-undefined-variables
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
+INSTALL_DIR := ~/bin
+
 command_tests := viewcal_test remind_test addappointments_test findappointment_test
 commands_to_test = $(command_tests:_test=)
 calfile := test/test_calendar.txt
 admin_email := mike
+
+$(INSTALL_DIR):
+	mkdir $@
+
+.PHONY: install careful_install careless_install
+
+install: careful_install
+
+careful_install: | $(INSTALL_DIR)
+	diff -q addappointments $(INSTALL_DIR) || cp -i addappointments $(INSTALL_DIR)
+	diff -q findappointment $(INSTALL_DIR) ||  cp -i findappointment $(INSTALL_DIR)
+	diff -q remind $(INSTALL_DIR) ||  cp -i remind $(INSTALL_DIR)
+	diff -q viewcal $(INSTALL_DIR) ||  cp -i viewcal $(INSTALL_DIR)
+	diff -q getmins $(INSTALL_DIR) ||  cp -i getmins $(INSTALL_DIR)
+	diff -q pause_mccal $(INSTALL_DIR) ||  cp -i pause_mccal $(INSTALL_DIR)
+	diff -q unpause_mccal $(INSTALL_DIR) ||  cp -i unpause_mccal $(INSTALL_DIR)
+	diff -q run_findapps.sh $(INSTALL_DIR) ||  cp -i run_findapps.sh $(INSTALL_DIR)
+
+careless_install: | $(INSTALL_DIR)
+	cp -f addappointments $(INSTALL_DIR)
+	cp -f findappointment $(INSTALL_DIR)
+	cp -f remind $(INSTALL_DIR)
+	cp -f viewcal $(INSTALL_DIR)
+	cp -f getmins $(INSTALL_DIR)
+	cp -f pause_mccal $(INSTALL_DIR)
+	cp -f unpause_mccal $(INSTALL_DIR)
+	cp -f run_findapps.sh $(INSTALL_DIR)
 
 test/output:
 	mkdir -p $@
