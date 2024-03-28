@@ -158,7 +158,7 @@ Simple reminder calendar -- addappointments
 
       Adds the contents of APPOINTMENTS, which contains events specified in the format:
 
-          <weekly|biweekly|monthly|yearly> <N>] [remind <M>] [yyyy-mm-dd] HH:mm [<text>]
+          [<weekly|biweekly|monthly|yearly> <N>] [remind <M>] [yyyy-mm-dd] HH:mm [<text>]
 
           where N indicates how often to repeat the reminder, and M is the number of
           minutes before the reminder is due to notify the user of it,
