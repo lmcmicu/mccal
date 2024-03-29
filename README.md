@@ -50,11 +50,8 @@ To start the mccal daemon, you may simply run
 
     $ findappointment &
     
-in a terminal window. Note that it is recommended that you preface this command with
-[nohup](https://www.man7.org/linux/man-pages/man1/nohup.1.html) in order to
-minimize the risk that the `findappointment` daemon is interrrupted inadvertently.
-
-For command line options run `findappointment --help` (see also below).
+in, e.g., a terminal window or via your window manager's initialisation
+script. For command line options run `findappointment --help` (see also below).
 
 ### Optional:
 
