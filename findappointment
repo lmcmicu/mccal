@@ -149,7 +149,7 @@ def main(adm_addr, calfilename, pausefile_name, sleep_secs, text_mode, mail_reci
       for (event_id, message) in reminder_queue.items():
         remind_prog = "remind -t" if text_mode else "remind"
         remind_prog = f"{remind_prog} -m {mail_recipient}" if mail_recipient else remind_prog
-        remind_prog = f"./{remind_prog}" if dev_mode else remind_prog
+        remind_prog = f"./{remind_prog}" if dev_mode else f"{str(Path.home())}/bin/{remind_prog}"
         command = f"{remind_prog} {calfile.name} {event_id} {message}"
         if text_mode:
           result = subprocess.run(command, shell=True, capture_output=True)
